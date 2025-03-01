@@ -25,13 +25,17 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   pauseAndResumeButton.addEventListener("click", () => {
-      // pause
-      if (timerRunning) {
+    if (timerRunning) {
+        // Pause the timer
         clearInterval(timerInterval); 
         timerRunning = false;
-        startButton.disabled = false;
-      }else if (!timerRunning) { //resume
+        pauseAndResumeButton.textContent = "Resume"; // Change button to "Resume"
+    } else {
+        // Resume the timer
         timerRunning = true;
+        pauseAndResumeButton.textContent = "Pause"; 
+        
+        // Calculate the remaining time from the stored end time
         chrome.storage.local.get("timerEnd", (data) => {
             if (!data.timerEnd) return;
 
@@ -40,7 +44,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             updateTimerDisplay();
         });
-
     }
   });
 
