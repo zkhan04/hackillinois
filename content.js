@@ -51,7 +51,7 @@ const generateTopicList = async (topic, custom_instruction) => {
                                 "type": "array"
                             }
                         },
-                      "required": ["bool_relevant"]
+                      "required": ["topic", "description", "list_of_topics"]
                       }
                     }
                 },
@@ -95,12 +95,13 @@ const getLLMOpinion = async (page_content, custom_instruction) => {
                     "maximum": 1,
                   }
                 },
-              "required": ["bool_relevant"]
+              "required": ["bool_relevant", "relevant"]
               }
             }
         },
         model: 'llama-3.2-3b-instruct',
-        max_tokens: -1
+        max_tokens: -1,
+        temperature: 0.2
     })
     // console.log(body);
 	try {
