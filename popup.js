@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const minutesLeft = Math.floor(timeLeftSeconds / 60); // Get the number of full minutes
           const secondsLeft = timeLeftSeconds % 60; // Get the remaining seconds
           timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-          if (timeLeft > 0) {
+          if (timeLeftSeconds > 0) {
               setTimeout(updateTimerDisplay, 1000);
           }
       });
