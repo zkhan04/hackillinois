@@ -80,36 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   updateTimerDisplay();
 
-  function updateTimerDisplay() {
-    chrome.storage.local.get("timerEnd", (data) => {
-      if (!data.timerEnd) return;
-
-      const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-      const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-      const minutesLeft = Math.floor(timeLeftSeconds / 60);  // Full minutes
-      const secondsLeft = timeLeftSeconds % 60;  // Remaining seconds
-
-      // Update the display
-      timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-
-      // Continue updating if the timer is still running
-      if (timeLeftSeconds > 0 && timerRunning) {
-        // Set the interval for every second if it's not already set
-        if (!timerInterval) {
-          timerInterval = setInterval(() => {
-            updateTimerDisplay();  // Update the display every second
-          }, 1000);
-        }
-      } else {
-        // Timer ends, clear the interval
-        clearInterval(timerInterval);
-        timerInterval = null;
-      }
-    });
-  }
-
-  updateTimerDisplay(); 
-
   // Get the toggle button
   const toggleButton = document.getElementById('toggle-btn');
 
