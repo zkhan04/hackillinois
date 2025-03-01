@@ -1,12 +1,13 @@
-let timerInterval = null;
-
-chrome.runtime.onInstalled.addListener(() => {
-    chrome.storage.local.set({ timerEnd: null });
+chrome.runtime.onMessage.addListener((message) => {
+    if (message === "popup_opened") {
+        startBackgroundTimer();
+    } else if (message === "resume_timer") {
+        startBackgroundTimer();
+    }
 });
 
-// Keep updating the time left in storage every second
 function startBackgroundTimer() {
-    if (timerInterval) return; // Prevent multiple intervals
+    if (timerInterval) return;
 
     timerInterval = setInterval(() => {
         chrome.storage.local.get("timerEnd", (data) => {
@@ -22,10 +23,3 @@ function startBackgroundTimer() {
         });
     }, 1000);
 }
-
-// Listen for popup opening and ensure the timer is running
-chrome.runtime.onMessage.addListener((message) => {
-    if (message === "popup_opened") {
-        startBackgroundTimer();
-    }
-});
