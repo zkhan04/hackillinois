@@ -26,26 +26,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   pauseAndResumeButton.addEventListener("click", () => {
     if (timerRunning) {
-      // Pause the timer
-      clearInterval(timerInterval);
-      timerRunning = false;
-      pauseAndResumeButton.textContent = "Resume"; // Change button to "Resume"
+        // Pause the timer
+        clearInterval(timerInterval); 
+        timerRunning = false;
+        pauseAndResumeButton.textContent = "Resume"; // Button text should say "Resume"
     } else {
-      // Resume the timer
-      timerRunning = true;
-      pauseAndResumeButton.textContent = "Pause"; // Change button to "Pause"
+        // Resume the timer
+        timerRunning = true;
+        pauseAndResumeButton.textContent = "Pause"; // Button text should say "Pause"
+        
+        // Calculate the remaining time from the stored end time
+        chrome.storage.local.get("timerEnd", (data) => {
+            if (!data.timerEnd) return;
 
-      // Calculate the remaining time from the stored end time
-      chrome.storage.local.get("timerEnd", (data) => {
-        if (!data.timerEnd) return;
+            const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+            chrome.storage.local.set({ timerEnd: Date.now() + timeLeftMilliseconds });
 
-        // Update the end time based on the remaining time
-        const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-        chrome.storage.local.set({ timerEnd: Date.now() + timeLeftMilliseconds });
-
-        // Continue updating the timer display
-        updateTimerDisplay();
-      });
+            // Start the interval for the resumed timer
+            updateTimerDisplay();
+        });
     }
   });
 
