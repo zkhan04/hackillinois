@@ -6,17 +6,27 @@
   <title>Focus Mode + Lock-in Timer</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+<h1>Focus Mode</h1>
 <body>
+    <select id="level">
+    <option>Focus Level: </option>
+    <option value="easy">Easy Mode</option>
+    <option value="hard">Hard Mode</option>
+    </select>
+    <br>
     <div class="container">
-      <h1>Focus Mode</h1>
       <button id="toggle-btn">Enable Focus Mode</button>
     </div>
-    <div id="popup">
+    <br>
+    <div id="timer">
         <label for="timeInput">Set Timer:</label>
-        <input type="number" id="timeInput" min="1">
-        <button id="startTimer">Start Timer</button>
-        <button id="pauseTimer">Pause Timer</button>
-        <button id="resumeTimer">Resume Timer</button>
+        <br>
+        <div id="insideTimer">
+          <input type="number" id="timeInput" min="1">
+          <button id="startTimer">Start Timer</button>
+          <button id="pauseTimer">Pause Timer</button>
+          <button id="resumeTimer">Resume Timer</button>
+        </div
         <p id="timerDisplay">Time Left: --</p>
     </div>
     <script src="popup.js"></script>
