@@ -3,7 +3,7 @@ const _opt = {
     type: "basic",
     title: "Lock in time!",
     message: `Looks like you're off task. It's time to lock in!`,
-    // iconUrl: "url_to_small_icon"
+    iconUrl: "icon.png"
   }
 
 const _id = "lock-in-notification";
