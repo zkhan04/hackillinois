@@ -66,10 +66,13 @@ document.addEventListener("DOMContentLoaded", () => {
           timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
           
           if (timeLeftSeconds > 0 && timerRunning) {
-              timerInterval = setInterval(updateTimerDisplay, 1000);
+              if (!timerInterval) {
+                  timerInterval = setInterval(updateTimerDisplay, 1000);
+              }
           } else {
               // Timer ends
               clearInterval(timerInterval);  
+              timerInterval = null;
           }
       });
 
