@@ -22,8 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updateTimerDisplay();
 
       startButton.disabled = true;
-      pauseButton.disabled = false;
-      resumeButton.disabled = true;
   });
 
   pauseAndResumeButton.addEventListener("click", () => {
@@ -31,9 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (timerRunning) {
         clearInterval(timerInterval); 
         timerRunning = false;
-        startButton.disabled = false; 
-        pauseButton.disabled = true; 
-        resumeButton.disabled = false; 
+        startButton.disabled = false;
       }
 
       // resume
@@ -48,8 +44,6 @@ document.addEventListener("DOMContentLoaded", () => {
             updateTimerDisplay();
         });
 
-        pauseButton.disabled = false;
-        resumeButton.disabled = true; 
     }
   });
 
