@@ -95,10 +95,32 @@ const getLLMOpinion = async (page_content, custom_instruction) => {
 	}
 };
 
+const storeTopic = async (response) => {
+	try {
+		await chrome.storage.local.set({ topic: response });
+	} catch (err) {
+		console.error('Failed to store LLM response', err);
+	}
+};
+
+const getStoredTopic = async () => {
+    try {
+        const result = await chrome.storage.local.get('topic');
+        if (result.topic) {
+            return result.topic;
+        } else {
+            console.log('No LLM response found in storage');
+            return null;
+        }
+    } catch (err) {
+        console.error('Failed to retrieve LLM response', err);
+        return null;
+    }
+};
+
 const storeTopicList = async (response) => {
 	try {
-		await chrome.storage.local.set({ llmResponse: response });
-		console.log('LLM response stored successfully');
+		await chrome.storage.local.set({ topicList: response });
 	} catch (err) {
 		console.error('Failed to store LLM response', err);
 	}
@@ -106,10 +128,9 @@ const storeTopicList = async (response) => {
 
 const getStoredTopicList = async () => {
     try {
-        const result = await chrome.storage.local.get('llmResponse');
-        if (result.llmResponse) {
-            console.log('Retrieved LLM response:', result.llmResponse);
-            return result.llmResponse;
+        const result = await chrome.storage.local.get('topicList');
+        if (result.topicList) {
+            return result.topicList;
         } else {
             console.log('No LLM response found in storage');
             return null;
@@ -131,6 +152,8 @@ const getStoredTopicList = async () => {
         // get the user's goal
         // const userTopic = await chrome.storage.sync.get("topic");
         const userTopic = "machine learning model optimization";
+        storeTopic(userTopic);
+        
         var instruction = "";
 
         (async function () {
