@@ -1,54 +1,78 @@
 document.addEventListener("DOMContentLoaded", () => {
   const timeInput = document.getElementById("timeInput");
   const startButton = document.getElementById("startTimer");
-  const pauseAndResumeButton = document.getElementById("pauseOrResumeTimer");
+  const pauseButton = document.getElementById("pauseTimer");
+  const resumeButton = document.getElementById("resumeTimer");
   const timerDisplay = document.getElementById("timerDisplay");
 
   let timerRunning = false;
+  let timeRemaining = 0; // Store the remaining time when paused
   let timerInterval = null;
 
   startButton.addEventListener("click", () => {
-    const time = parseInt(timeInput.value);
-    if (isNaN(time) || time <= 0) return;
+      const time = parseInt(timeInput.value);
+      if (isNaN(time) || time <= 0)
+          return;
+      // sets a timer, time*60000 because Date.now() is in milliseconds and time is in minutes
+      chrome.storage.local.set({ timerEnd: Date.now() + time * 60000 });
+      chrome.alarms.create("countdown", { delayInMinutes: time });
+      
+      if(timerRunning == false){
+        timerRunning = true;
+      }
+      updateTimerDisplay();
 
-    // Set the timer end time
-    chrome.storage.local.set({ timerEnd: Date.now() + time * 60000 });
-    
-    // Start the timer
+      startButton.disabled = true;
+      pauseButton.disabled = false;
+      resumeButton.disabled = true;
+  });
+
+  pauseButton.addEventListener("click", () => {
+      if (timerRunning) {
+        clearInterval(timerInterval); 
+        timerRunning = false;
+        startButton.disabled = false; 
+        pauseButton.disabled = true; 
+        resumeButton.disabled = false; 
+      }
+  });
+
+  resumeButton.addEventListener("click", () => {
     if (!timerRunning) {
-      timerRunning = true;
-      updateTimerDisplay();  // Immediately update the timer display
+        timerRunning = true;
+        chrome.storage.local.get("timerEnd", (data) => {
+            if (!data.timerEnd) return;
+
+            const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+            chrome.storage.local.set({ timerEnd: Date.now() + timeLeftMilliseconds });
+
+            updateTimerDisplay();
+        });
+
+        pauseButton.disabled = false;
+        resumeButton.disabled = true; 
     }
+});
 
-    // Disable start button, enable pause/resume button
-    startButton.disabled = true;
-    pauseAndResumeButton.disabled = false;
-    pauseAndResumeButton.textContent = "Pause";  // Initially, show "Pause"
-  });
-
-  pauseAndResumeButton.addEventListener("click", () => {
-    if (timerRunning) {
-      // Pause the timer
-      clearInterval(timerInterval);
-      timerRunning = false;
-      pauseAndResumeButton.textContent = "Resume";  // Change button to "Resume"
-    } else {
-      // Resume the timer
-      timerRunning = true;
-      pauseAndResumeButton.textContent = "Pause";  // Change button to "Pause"
-
-      // Calculate the remaining time from the stored end time
+  function updateTimerDisplay() {
       chrome.storage.local.get("timerEnd", (data) => {
-        if (!data.timerEnd) return;
+          if (!data.timerEnd)
+              return;
 
-        const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-        chrome.storage.local.set({ timerEnd: Date.now() + timeLeftMilliseconds });
+          const timeLeftSeconds = Math.max(0, Math.floor((data.timerEnd - Date.now()) / 1000));
+          const minutesLeft = Math.floor(timeLeftSeconds / 60); // Get the number of full minutes
+          const secondsLeft = timeLeftSeconds % 60; // Get the remaining seconds
 
-        // Continue updating the timer display
-        updateTimerDisplay();
+          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
+          if (timeLeftSeconds > 0 && timerRunning) {
+                timerInterval = setInterval(updateTimerDisplay, 1000); 
+            } else {
+                // Timer ends
+                clearInterval(timerInterval);
+            }
       });
-    }
-  });
+  }
+  updateTimerDisplay();
 
   function updateTimerDisplay() {
     chrome.storage.local.get("timerEnd", (data) => {
