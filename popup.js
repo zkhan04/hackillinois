@@ -28,14 +28,31 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   pauseButton.addEventListener("click", () => {
-    if (timerRunning) {
-      clearInterval(timerInterval); 
-      timerRunning = false;
-      startButton.disabled = false; 
-      pauseButton.disabled = true; 
-      resumeButton.disabled = false; 
-    }
+      if (timerRunning) {
+        clearInterval(timerInterval); 
+        timerRunning = false;
+        startButton.disabled = false; 
+        pauseButton.disabled = true; 
+        resumeButton.disabled = false; 
+      }
   });
+
+  resumeButton.addEventListener("click", () => {
+    if (!timerRunning) {
+        timerRunning = true;
+        chrome.storage.local.get("timerEnd", (data) => {
+            if (!data.timerEnd) return;
+
+            const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+            chrome.storage.local.set({ timerEnd: Date.now() + timeLeftMilliseconds });
+
+            updateTimerDisplay();
+        });
+
+        pauseButton.disabled = false;
+        resumeButton.disabled = true; 
+    }
+});
 
   function updateTimerDisplay() {
       chrome.storage.local.get("timerEnd", (data) => {
