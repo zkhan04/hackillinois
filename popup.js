@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   pauseButton.addEventListener("click", () => {
       if (timerRunning) {
         clearInterval(timerInterval); 
+        timerInterval = null; 
         timerRunning = false;
         startButton.disabled = false; 
         pauseButton.disabled = true; 
@@ -48,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Ensure the display updates and interval continues
             updateTimerDisplay();
         });
+        timerInterval = setInterval(updateTimerDisplay, 1000);
 
         pauseButton.disabled = false;
         resumeButton.disabled = true;
