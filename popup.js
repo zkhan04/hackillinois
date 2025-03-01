@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
+  activateTimer();
+  activateToggleButton();
+});
+
+const activateTimer = () => {
   const timeInput = document.getElementById("timeInput");
   const startButton = document.getElementById("startTimer");
   const timerDisplay = document.getElementById("timerDisplay");
@@ -23,7 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
   updateTimerDisplay();
+}
 
+const activateToggleButton = () => {
   // Get the toggle button
   const toggleButton = document.getElementById('toggle-btn');
 
@@ -50,4 +57,4 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateButtonText(isEnabled) {
     toggleButton.textContent = isEnabled ? 'Disable Focus Mode' : 'Enable Focus Mode';
   }
-});
+}
