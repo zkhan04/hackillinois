@@ -23,13 +23,16 @@ function startBackgroundTimer() {
     }, 1000);
 }
 
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message === "popup_opened") {
-        startBackgroundTimer(); // Ensure the timer keeps running when popup opens
+        startBackgroundTimer();
     } else if (message === "resume_timer") {
-        startBackgroundTimer(); // Resume the timer when resuming
+        startBackgroundTimer();
     } else if (message === "pause_timer") {
         clearInterval(timerInterval);
         timerInterval = null;
     }
+
+    sendResponse({ status: "received" }); // Avoid errors from missing responses
+    return true; // Keeps the message port open
 });
