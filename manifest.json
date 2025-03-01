@@ -8,5 +8,9 @@
       "matches": ["https://*/*", "http://*/*"],
       "js": ["content.js"]
     }
-  ]
+  ],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions":["notifications"]
 }

@@ -8,15 +8,17 @@ const _opt = {
 
 const _id = "lock-in-notification";
 
+// const button = document.getElementById('enable-notifications');
+// button.addEventListener('click', askForNotificationPermission);
+
 function askForNotificationPermission() {
-    if (!("Notification" in window)) {
-        console.log("This browser does not support notifications.");
-        return;
-      }
-      Notification.requestPermission().then((permission) => {
-        // set the button to shown or hidden, depending on what the user answers
-        enableNotifications.style.display = permission === "granted" ? "none" : "block";
-      });
+  if (!("Notification" in window)) {
+    // Check if the browser supports notifications
+    alert("This browser does not support desktop notification");
+  }  else if (Notification.permission !== "denied") {
+    // We need to ask the user for permission
+    Notification.requestPermission();
+  }
 }
 
 async function showNotification() {  
