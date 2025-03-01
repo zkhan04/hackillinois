@@ -1,8 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const timeInput = document.getElementById("timeInput");
   const startButton = document.getElementById("startTimer");
-  const pauseButton = document.getElementById("pauseTimer");
-  const resumeButton = document.getElementById("resumeTimer");
+  const pauseAndResumeButton = document.getElementById("pauseOrResumeTimer");
   const timerDisplay = document.getElementById("timerDisplay");
 
   let timerRunning = false;
@@ -27,7 +26,8 @@ document.addEventListener("DOMContentLoaded", () => {
       resumeButton.disabled = true;
   });
 
-  pauseButton.addEventListener("click", () => {
+  pauseAndResumeButton.addEventListener("click", () => {
+      // pause
       if (timerRunning) {
         clearInterval(timerInterval); 
         timerRunning = false;
@@ -35,10 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
         pauseButton.disabled = true; 
         resumeButton.disabled = false; 
       }
-  });
 
-  resumeButton.addEventListener("click", () => {
-    if (!timerRunning) {
+      // resume
+      if (!timerRunning) {
         timerRunning = true;
         chrome.storage.local.get("timerEnd", (data) => {
             if (!data.timerEnd) return;
@@ -52,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
         pauseButton.disabled = false;
         resumeButton.disabled = true; 
     }
-});
+  });
 
   function updateTimerDisplay() {
       chrome.storage.local.get("timerEnd", (data) => {
