@@ -3,6 +3,10 @@
   "name": "Minimal Chrome Extension",
   "version": "1.0",
   "description": "A simple extension with a content script.",
+  "permissions": ["storage", "alarms"],
+  "action": {
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": ["https://*/*", "http://*/*"],
