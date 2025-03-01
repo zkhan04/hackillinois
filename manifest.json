@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Minimal Chrome Extension",
+  "name": "Focus Mode Toggle",
   "version": "1.0",
   "description": "A simple extension with a content script.",
   "permissions": ["storage", "alarms"],
@@ -9,8 +9,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://*/*", "http://*/*"],
-      "js": ["content.js"]
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "type": "module"
     }
-  ]
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": ["storage"]
 }
