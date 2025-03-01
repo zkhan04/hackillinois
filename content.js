@@ -33,6 +33,28 @@ const generateTopicList = async (topic, custom_instruction) => {
                     { "role": "system", "content": custom_instruction},
                     { "role": "user", "content": user_prompt}
                 ],
+                response_format: {
+                    "type": "json_schema",
+                    "json_schema": {
+                      "name": "relavency",
+                      "strict": "true",
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                            "topic": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "list_of_topics": {
+                                "type": "array"
+                            }
+                        },
+                      "required": ["bool_relevant"]
+                      }
+                    }
+                },
                 model: 'llama-3.2-3b-instruct',
 				max_tokens: -1
 			})
@@ -153,16 +175,17 @@ const getStoredTopicList = async () => {
         // const userTopic = await chrome.storage.sync.get("topic");
         const userTopic = "machine learning model optimization";
         storeTopic(userTopic);
-        
+
         var instruction = "";
 
         (async function () {
             // get
             const allText = getPageText();
 
-            instruction = "Your task is to generate a list of relevant topics based on a given user topic (20+ topics). The goal is to create a broader context so that we can determine whether a webpage is relevant to the user’s interest.Guidelines: - Expand the given topic by identifying closely related subtopics, concepts, or terminologies. - Include synonyms, industry-specific jargon, and alternative ways the topic may be discussed. - If applicable, provide different perspectives (e.g., academic, technical, casual, industry use cases). - Prioritize topics that are likely to appear on webpages that genuinely cover the subject. - Do not generate overly broad or generic topics—keep them directly relevant. - Output should be a list with very brief description that is more like relavent keyword of the description(5 keywords)";
+            instruction = "Your task is to generate a structured list of 20+ relevant topics based on a given user topic. The goal is to create a broader context to help determine whether a webpage is relevant to the user’s interest. | Output Format: topic: string (Original user topic), description: string (Brief summary of the topic), list_of_topics: array (20+ relevant subtopics, each containing a short keyword-based description with exactly 5 keywords). | Guidelines: - Expand the given topic by identifying closely related subtopics, concepts, or terminologies. - Include synonyms, industry-specific jargon, and alternative ways the topic may be discussed. - If applicable, provide different perspectives (e.g., academic, technical, casual, industry use cases). - Prioritize topics that are likely to appear on webpages that genuinely cover the subject. - Do not generate overly broad or generic topics—keep them directly relevant. - Ensure that each subtopic in list_of_topics has an accompanying 5-keyword description that concisely represents its core concept. - Do not generate explanations, summaries, or commentary beyond the specified format.";
             const response = await generateTopicList(userTopic, instruction);
             const llmContent = response['choices'][0]['message']['content'];
+            console.log(llmContent);
 
             // Store the LLM response
             await storeTopicList(llmContent);
