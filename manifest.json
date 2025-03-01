@@ -3,6 +3,9 @@
   "name": "Focus Mode Toggle",
   "version": "1.0",
   "description": "A simple extension with a content script.",
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html"
   },
