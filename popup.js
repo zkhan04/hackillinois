@@ -9,6 +9,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Notify background script that popup is open
   chrome.runtime.sendMessage("popup_opened");
+  
+  // Restore button states when popup opens
+  chrome.storage.local.get(["timerEnd", "timerRunning"], (data) => {
+      if (data.timerRunning) {
+          timerRunning = true;
+          startButton.disabled = true;
+          pauseButton.disabled = false;
+          resumeButton.disabled = true;
+      } else {
+          startButton.disabled = false;
+          pauseButton.disabled = true;
+          resumeButton.disabled = false;
+      }
+      updateTimerDisplay();
+  });
 
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
