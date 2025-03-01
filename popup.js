@@ -5,23 +5,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const timerDisplay = document.getElementById("timerDisplay");
 
   let timerRunning = false;
-  let timeRemaining = 0; // Store the remaining time when paused
   let timerInterval = null;
 
   startButton.addEventListener("click", () => {
-      const time = parseInt(timeInput.value);
-      if (isNaN(time) || time <= 0)
-          return;
-      // sets a timer, time*60000 because Date.now() is in milliseconds and time is in minutes
-      chrome.storage.local.set({ timerEnd: Date.now() + time * 60000 });
-      chrome.alarms.create("countdown", { delayInMinutes: time });
-      
-      if(timerRunning == false){
-        timerRunning = true;
-      }
-      updateTimerDisplay();
+    const time = parseInt(timeInput.value);
+    if (isNaN(time) || time <= 0) return;
 
-      startButton.disabled = true;
+    // Set the timer end time
+    chrome.storage.local.set({ timerEnd: Date.now() + time * 60000 });
+    
+    // Start the timer
+    if (!timerRunning) {
+      timerRunning = true;
+      updateTimerDisplay();  // Immediately update the timer display
+    }
+
+    // Disable start button, enable pause/resume button
+    startButton.disabled = true;
+    pauseAndResumeButton.disabled = false;
+    pauseAndResumeButton.textContent = "Pause";  // Initially, show "Pause"
   });
 
   pauseAndResumeButton.addEventListener("click", () => {
@@ -49,29 +51,34 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function updateTimerDisplay() {
-      chrome.storage.local.get("timerEnd", (data) => {
-          if (!data.timerEnd)
-              return;
+    chrome.storage.local.get("timerEnd", (data) => {
+      if (!data.timerEnd) return;
 
-          const timeLeftSeconds = Math.max(0, Math.floor((data.timerEnd - Date.now()) / 1000));
-          const minutesLeft = Math.floor(timeLeftSeconds / 60); // Get the number of full minutes
-          const secondsLeft = timeLeftSeconds % 60; // Get the remaining seconds
+      const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+      const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
+      const minutesLeft = Math.floor(timeLeftSeconds / 60);  // Full minutes
+      const secondsLeft = timeLeftSeconds % 60;  // Remaining seconds
 
-          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-          
-          if (timeLeftSeconds > 0 && timerRunning) {
-              if (!timerInterval) {
-                  timerInterval = setInterval(updateTimerDisplay, 1000);
-              }
-          } else {
-              // Timer ends
-              clearInterval(timerInterval);  
-              timerInterval = null;
-          }
-      });
+      // Update the display
+      timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
 
+      // Continue updating if the timer is still running
+      if (timeLeftSeconds > 0 && timerRunning) {
+        // Set the interval for every second if it's not already set
+        if (!timerInterval) {
+          timerInterval = setInterval(() => {
+            updateTimerDisplay();  // Update the display every second
+          }, 1000);
+        }
+      } else {
+        // Timer ends, clear the interval
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    });
   }
-  updateTimerDisplay();
+
+  updateTimerDisplay(); 
 
   // Get the toggle button
   const toggleButton = document.getElementById('toggle-btn');
