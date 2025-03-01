@@ -11,19 +11,23 @@ const _id = "lock-in-notification";
 // const button = document.getElementById('enable-notifications');
 // button.addEventListener('click', askForNotificationPermission);
 
-function askForNotificationPermission() {
-  if (!("Notification" in window)) {
-    // Check if the browser supports notifications
-    alert("This browser does not support desktop notification");
-  }  else if (Notification.permission !== "denied") {
-    // We need to ask the user for permission
-    Notification.requestPermission();
-  }
-}
+// function askForNotificationPermission() {
+//     chrome.permissions.request(
+//       {
+//         permissions: ["notifications"],
+//       },
+//       function (granted) {
+//         if (granted) {
+//           showNotification(_id, _opt);
+//         } 
+//       }
+//     );
 
-async function showNotification() {  
+// }
+
+async function showNotification(id, options) {
     if (Notification.permission === "granted") {
-        await chrome.notifications.create(_id, _opt);
+        await chrome.notifications.create(id, options);
     }
     
 }
