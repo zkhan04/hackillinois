@@ -39,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resumeButton.addEventListener("click", () => {
     if (!timerRunning) {
+        // Resume the timer
         timerRunning = true;
         chrome.storage.local.get("timerEnd", (data) => {
             if (!data.timerEnd) return;
@@ -49,10 +50,11 @@ document.addEventListener("DOMContentLoaded", () => {
             updateTimerDisplay();
         });
 
+        // Disable buttons accordingly
         pauseButton.disabled = false;
-        resumeButton.disabled = true; 
+        resumeButton.disabled = true;
     }
-});
+  });
 
   function updateTimerDisplay() {
       chrome.storage.local.get("timerEnd", (data) => {
