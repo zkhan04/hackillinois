@@ -39,7 +39,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   resumeButton.addEventListener("click", () => {
     if (!timerRunning) {
-        // Resume the timer
         timerRunning = true;
         chrome.storage.local.get("timerEnd", (data) => {
             if (!data.timerEnd) return;
@@ -50,11 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
             updateTimerDisplay();
         });
 
-        // Disable buttons accordingly
         pauseButton.disabled = false;
-        resumeButton.disabled = true;
+        resumeButton.disabled = true; 
     }
-  });
+});
 
   function updateTimerDisplay() {
       chrome.storage.local.get("timerEnd", (data) => {
@@ -66,8 +64,8 @@ document.addEventListener("DOMContentLoaded", () => {
           const secondsLeft = timeLeftSeconds % 60; // Get the remaining seconds
 
           timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
+          
           if (timeLeftSeconds > 0 && timerRunning) {
-              // Start a new interval to update every second
               if (!timerInterval) {
                   timerInterval = setInterval(updateTimerDisplay, 1000);
               }
@@ -77,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
               timerInterval = null;
           }
       });
+
   }
   updateTimerDisplay();
 
