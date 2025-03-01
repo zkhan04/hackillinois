@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Focus Mode + Lock-in Timer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+      <h1>Focus Mode</h1>
+      <button id="toggle-btn">Enable Focus Mode</button>
+    </div>
+    <div id="popup">
+        <label for="timeInput">Set Timer:</label>
+        <input type="number" id="timeInput" min="1">
+        <button id="startTimer">Start Timer</button>
+        <p id="timerDisplay">Time Left: --</p>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
