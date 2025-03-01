@@ -57,31 +57,22 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function updateTimerDisplay() {
-      chrome.storage.local.get("timerEnd", (data) => {
-          if (!data.timerEnd)
-              return;
+    chrome.storage.local.get("timerEnd", (data) => {
+        if (!data.timerEnd) return;
 
-          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-          const minutesLeft = Math.floor(timeLeftSeconds / 60); // Get the number of full minutes
-          const secondsLeft = timeLeftSeconds % 60; // Get the remaining seconds
+        const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+        const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
+        const minutesLeft = Math.floor(timeLeftSeconds / 60);
+        const secondsLeft = timeLeftSeconds % 60;
 
-          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-          
-          if (timeLeftSeconds > 0 && timerRunning) {
-              // Only set the interval if it's not already set
-              if (!timerInterval) {
-                  timerInterval = setInterval(updateTimerDisplay, 1000);
-              }
-          } else {
-              // Timer ends
-              clearInterval(timerInterval);  
-              timerInterval = null;
-          }
-      });
-  }
+        timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
 
-  updateTimerDisplay();
+        // Keep updating the display every second while the popup is open
+        setTimeout(updateTimerDisplay, 1000);
+    });
+}
+
+updateTimerDisplay();
 
   // Get the toggle button
   const toggleButton = document.getElementById('toggle-btn');
