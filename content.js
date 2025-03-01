@@ -1,7 +1,7 @@
 baseUrl = 'http://127.0.0.1:1234/';
 apis = ['/api/v0/models', '/api/v0/chat/completions']
 // import { getPageText } from "./scraper";
-
+LLM_MODEL = 'llama-3.2-3b-instruct';
 // gets all of the "mai"
 const getPageText = () => {
     const content = document.querySelector("#content");
@@ -55,7 +55,7 @@ const generateTopicList = async (topic, custom_instruction) => {
                       }
                     }
                 },
-                model: 'llama-3.2-3b-instruct',
+                model: LLM_MODEL,
 				max_tokens: -1
 			})
 		});
@@ -99,7 +99,7 @@ const getLLMOpinion = async (page_content, custom_instruction) => {
               }
             }
         },
-        model: 'llama-3.2-3b-instruct',
+        model: LLM_MODEL,
         max_tokens: -1,
         temperature: 0.2
     })
