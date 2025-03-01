@@ -3,7 +3,6 @@
   "name": "Focus Mode Toggle",
   "version": "1.0",
   "description": "A simple extension with a content script.",
-  "permissions": ["storage", "alarms"],
   "action": {
     "default_popup": "popup.html"
   },
@@ -14,8 +13,5 @@
       "type": "module"
     }
   ],
-  "action": {
-    "default_popup": "popup.html"
-  },
-  "permissions": ["storage"]
+  "permissions": ["storage", "alarms"]
 }
