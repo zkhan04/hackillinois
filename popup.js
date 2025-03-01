@@ -1,7 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => {
   const timeInput = document.getElementById("timeInput");
   const startButton = document.getElementById("startTimer");
+  const pauseButton = document.getElementById("pauseTimer");
+  const resumeButton = document.getElementById("resumeTimer");
   const timerDisplay = document.getElementById("timerDisplay");
+
+  let timerRunning = false;
+  let timeRemaining = 0; // Store the remaining time when paused
+  let timerInterval = null;
+
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
       if (isNaN(time) || time <= 0)
@@ -9,19 +16,43 @@ document.addEventListener("DOMContentLoaded", () => {
       // sets a timer, time*60000 because Date.now() is in milliseconds and time is in minutes
       chrome.storage.local.set({ timerEnd: Date.now() + time * 60000 });
       chrome.alarms.create("countdown", { delayInMinutes: time });
+      
+      if(timerRunning == false){
+        timerRunning = true;
+      }
       updateTimerDisplay();
+
+      startButton.disabled = true;
+      pauseButton.disabled = false;
+      resumeButton.disabled = true;
   });
+
+  pauseButton.addEventListener("click", () => {
+    if (timerRunning) {
+      timerRunning = false;
+      clearInterval(timerInterval); 
+      startButton.disabled = false; 
+      pauseButton.disabled = true; 
+      resumeButton.disabled = false; 
+  }
+  });
+
   function updateTimerDisplay() {
       chrome.storage.local.get("timerEnd", (data) => {
           if (!data.timerEnd)
               return;
+
           const timeLeftSeconds = Math.max(0, Math.floor((data.timerEnd - Date.now()) / 1000));
           const minutesLeft = Math.floor(timeLeftSeconds / 60); // Get the number of full minutes
           const secondsLeft = timeLeftSeconds % 60; // Get the remaining seconds
+
           timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-          if (timeLeftSeconds > 0) {
-              setTimeout(updateTimerDisplay, 1000);
-          }
+          if (timeLeftSeconds > 0 && timerRunning) {
+                timerInterval = setInterval(updateTimerDisplay, 1000); 
+            } else {
+                // Timer ends
+                clearInterval(timerInterval);
+            }
       });
   }
   updateTimerDisplay();
