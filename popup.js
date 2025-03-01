@@ -6,21 +6,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const timerDisplay = document.getElementById("timerDisplay");
 
   let timerRunning = false;
-  let timerInterval = null;
+
+  // Notify background script that popup is open
   chrome.runtime.sendMessage("popup_opened");
 
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
-      if (isNaN(time) || time <= 0)
-          return;
-      // sets a timer, time*60000 because Date.now() is in milliseconds and time is in minutes
-      chrome.storage.local.set({ timerEnd: Date.now() + time * 60000 });
-      
-      if (!timerRunning) {
-        timerRunning = true;
-        updateTimerDisplay();
-      }
+      if (isNaN(time) || time <= 0) return;
 
+      const timerEnd = Date.now() + time * 60000;
+      chrome.storage.local.set({ timerEnd, timerPaused: null });
+
+      timerRunning = true;
+      updateTimerDisplay();
       startButton.disabled = true;
       pauseButton.disabled = false;
       resumeButton.disabled = true;
@@ -28,57 +26,53 @@ document.addEventListener("DOMContentLoaded", () => {
 
   pauseButton.addEventListener("click", () => {
       if (timerRunning) {
-        clearInterval(timerInterval); 
-        timerInterval = null; 
-        timerRunning = false;
-        startButton.disabled = false; 
-        pauseButton.disabled = true; 
-        resumeButton.disabled = false; 
+          chrome.storage.local.get("timerEnd", (data) => {
+              if (!data.timerEnd) return;
+
+              const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null });
+
+              chrome.runtime.sendMessage("pause_timer");
+          });
+
+          timerRunning = false;
+          startButton.disabled = false;
+          pauseButton.disabled = true;
+          resumeButton.disabled = false;
       }
   });
 
   resumeButton.addEventListener("click", () => {
-    if (!timerRunning) {
-        timerRunning = true;
-        
-        chrome.storage.local.get("timerEnd", (data) => {
-            if (!data.timerEnd) return;
+      if (!timerRunning) {
+          chrome.storage.local.get("timerPaused", (data) => {
+              if (!data.timerPaused) return;
 
-            const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-            chrome.storage.local.set({ timerEnd: Date.now() + timeLeftMilliseconds }); // Update the end time with the correct remaining time
+              const newEndTime = Date.now() + data.timerPaused;
+              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null });
 
-            // Ensure the display updates and interval continues
-            updateTimerDisplay();
-        });
-        timerInterval = setInterval(updateTimerDisplay, 1000);
+              chrome.runtime.sendMessage("resume_timer");
+              updateTimerDisplay();
+          });
 
-        pauseButton.disabled = false;
-        resumeButton.disabled = true;
-    }
+          timerRunning = true;
+          pauseButton.disabled = false;
+          resumeButton.disabled = true;
+      }
   });
 
   function updateTimerDisplay() {
-      chrome.storage.local.get("timerEnd", (data) => {
-          if (!data.timerEnd)
-              return;
+      chrome.storage.local.get(["timerEnd"], (data) => {
+          if (!data.timerEnd) return;
 
           const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
           const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-          const minutesLeft = Math.floor(timeLeftSeconds / 60); // Get the number of full minutes
-          const secondsLeft = timeLeftSeconds % 60; // Get the remaining seconds
+          const minutesLeft = Math.floor(timeLeftSeconds / 60);
+          const secondsLeft = timeLeftSeconds % 60;
 
           timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-          
-          if (timeLeftSeconds > 0 && timerRunning) {
-              // Only set the interval if it's not already set
-              if (!timerInterval) {
-                  timerInterval = setInterval(updateTimerDisplay, 1000);
-              }
-          } else {
-              // Timer ends
-              clearInterval(timerInterval);  
-              timerInterval = null;
-          }
+
+          // Keep updating every second while popup is open
+          setTimeout(updateTimerDisplay, 1000);
       });
   }
 
