@@ -19,8 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
         chrome.storage.local.get("timerEnd", (data) => {
             if (!data.timerEnd) return;
 
-            const timeLeft = Math.max(0, Math.floor((data.timerEnd - Date.now()) / 1000));
-            timerDisplay.textContent = `Time Left: ${timeLeft}s`;
+            const timeLeft = Math.max(0, Math.floor((data.timerEnd - Date.now()) / 60000));
+            timerDisplay.textContent = `Time Left: ${timeLeft}min`;
 
             if (timeLeft > 0) {
                 setTimeout(updateTimerDisplay, 1000);
