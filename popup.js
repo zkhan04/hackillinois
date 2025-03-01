@@ -29,12 +29,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   pauseButton.addEventListener("click", () => {
     if (timerRunning) {
-      timerRunning = false;
       clearInterval(timerInterval); 
+      timerRunning = false;
       startButton.disabled = false; 
       pauseButton.disabled = true; 
       resumeButton.disabled = false; 
-  }
+    }
   });
 
   function updateTimerDisplay() {
