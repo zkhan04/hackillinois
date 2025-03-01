@@ -1,27 +1,100 @@
 document.addEventListener("DOMContentLoaded", () => {
   const timeInput = document.getElementById("timeInput");
   const startButton = document.getElementById("startTimer");
+  const pauseButton = document.getElementById("pauseTimer");
+  const resumeButton = document.getElementById("resumeTimer");
   const timerDisplay = document.getElementById("timerDisplay");
-  startButton.addEventListener("click", () => {
-      const time = parseInt(timeInput.value);
-      if (isNaN(time) || time <= 0)
-          return;
-      // sets a timer, time*60000 because Date.now() is in milliseconds and time is in minutes
-      chrome.storage.local.set({ timerEnd: Date.now() + time * 60000 });
-      chrome.alarms.create("countdown", { delayInMinutes: time });
+
+  let timerRunning = false;
+
+  // Notify background script that popup is open
+  chrome.runtime.sendMessage("popup_opened");
+
+  function hideStart() {
+    document.getElementById("timerStart").style.display = "none";
+}
+  
+  // Restore button states when popup opens
+  chrome.storage.local.get(["timerEnd", "timerRunning"], (data) => {
+      if (data.timerRunning) {
+          timerRunning = true;
+          startButton.disabled = true;
+          pauseButton.disabled = false;
+          resumeButton.disabled = true;
+      } else {
+          startButton.disabled = false;
+          pauseButton.disabled = true;
+          resumeButton.disabled = false;
+      }
       updateTimerDisplay();
   });
+
+  startButton.addEventListener("click", () => {
+      const time = parseInt(timeInput.value);
+      if (isNaN(time) || time <= 0) return;
+
+      const timerEnd = Date.now() + time * 60000;
+      chrome.storage.local.set({ timerEnd, timerPaused: null });
+
+      timerRunning = true;
+      updateTimerDisplay();
+      startButton.disabled = true;
+      pauseButton.disabled = false;
+      resumeButton.disabled = true;
+  });
+
+  pauseButton.addEventListener("click", () => {
+      if (timerRunning) {
+          chrome.storage.local.get("timerEnd", (data) => {
+              if (!data.timerEnd) return;
+
+              const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null });
+
+              chrome.runtime.sendMessage("pause_timer");
+          });
+
+          timerRunning = false;
+          startButton.disabled = false;
+          pauseButton.disabled = true;
+          resumeButton.disabled = false;
+      }
+  });
+
+  resumeButton.addEventListener("click", () => {
+      if (!timerRunning) {
+          chrome.storage.local.get("timerPaused", (data) => {
+              if (!data.timerPaused) return;
+
+              const newEndTime = Date.now() + data.timerPaused;
+              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null });
+
+              chrome.runtime.sendMessage("resume_timer");
+              updateTimerDisplay();
+          });
+
+          timerRunning = true;
+          pauseButton.disabled = false;
+          resumeButton.disabled = true;
+      }
+  });
+
   function updateTimerDisplay() {
-      chrome.storage.local.get("timerEnd", (data) => {
-          if (!data.timerEnd)
-              return;
-          const timeLeft = Math.max(0, Math.floor((data.timerEnd - Date.now()) / 1000));
-          timerDisplay.textContent = `Time Left: ${timeLeft}s`;
-          if (timeLeft > 0) {
-              setTimeout(updateTimerDisplay, 1000);
-          }
+      chrome.storage.local.get(["timerEnd"], (data) => {
+          if (!data.timerEnd) return;
+
+          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
+          const minutesLeft = Math.floor(timeLeftSeconds / 60);
+          const secondsLeft = timeLeftSeconds % 60;
+
+          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
+
+          // Keep updating every second while popup is open
+          setTimeout(updateTimerDisplay, 1000);
       });
   }
+
   updateTimerDisplay();
 
   // Get the toggle button
