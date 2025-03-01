@@ -1,3 +1,5 @@
+let timerInterval = null;
+
 chrome.runtime.onMessage.addListener((message) => {
     if (message === "popup_opened") {
         startBackgroundTimer();
