@@ -25,7 +25,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (timeLeft > 0) {
                 setTimeout(updateTimerDisplay, 1000);
             }
+
+            console.log("Current time:", Date.now());
+            console.log("Timer end time:", data.timerEnd);
         });
+        
     }
 
     updateTimerDisplay();
