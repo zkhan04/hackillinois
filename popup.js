@@ -30,10 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         clearInterval(timerInterval); 
         timerRunning = false;
         startButton.disabled = false;
-      }
-
-      // resume
-      if (!timerRunning) {
+      }else if (!timerRunning) { //resume
         timerRunning = true;
         chrome.storage.local.get("timerEnd", (data) => {
             if (!data.timerEnd) return;
