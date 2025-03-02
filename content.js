@@ -1,5 +1,5 @@
-BASE_URL = 'http://127.0.0.1:1234/';
-LLM_MODEL = 'llama-3.2-3b-instruct';
+const BASE_URL = 'http://127.0.0.1:1234/';
+const LLM_MODEL = 'llama-3.2-3b-instruct';
 
 const getPageText = () => {
     const content = document.querySelector("#content");
