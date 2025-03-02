@@ -19,6 +19,9 @@ function startBackgroundTimer() {
                 clearInterval(timerInterval);
                 timerInterval = null;
                 chrome.storage.local.set({ timerEnd: null, timerRunning: false });
+                chrome.storage.local.remove("topic");
+                chrome.storage.local.remove("topicList");
+                chrome.storage.local.set({focusModeEnabled: false});
                 chrome.runtime.sendMessage("timer_finished"); // Notify popup if open
             }
         });
