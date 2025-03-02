@@ -1,4 +1,5 @@
 let timerInterval = null;
+let notificationWindowId = null;
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ timerEnd: null, timerRunning: false });
@@ -15,7 +16,11 @@ function startBackgroundTimer() {
 }
 
 function calculateFinalStats(stats) {
-  if (!stats || stats.count === 0) {
+  // Initialize stats object if it doesn't exist
+  const safeStats = stats || { totalScore: 0, count: 0 };
+  
+  // Only show easter egg if literally no websites were visited
+  if (safeStats.count === 0) {
     return {
       averageScore: 0,
       count: 0,
@@ -24,14 +29,14 @@ function calculateFinalStats(stats) {
     };
   }
   
-  const average = stats.totalScore / stats.count;
+  const average = safeStats.totalScore / safeStats.count;
   const message = average >= 0.7 
     ? "Congrats! You stayed focused! 🎉" 
     : "Keep trying! You can do better next time!";
     
   return {
     averageScore: average,
-    count: stats.count,
+    count: safeStats.count,
     message: message,
     isEasterEgg: false
   };
@@ -83,19 +88,29 @@ chrome.runtime.onMessage.addListener((message) => {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "showNotification") {
-    const _opt = {
-      type: "basic",
-      title: "Lock in time!",
-      message: `Looks like you're off task. It's time to lock in!`,
-      iconUrl: "icon.png"
-    };
-    const _id = "lock-in-notification";
-    chrome.notifications.create(_id, _opt);
-    sendResponse({status: "notification shown"});
+    chrome.windows.create({
+        url: chrome.runtime.getURL("notification.html"),
+        type: "popup",
+        width: 350,
+        height: 250,
+    }, (window) => {
+        // Store the window ID so we can close it later if needed
+        notificationWindowId = window.id;
+        sendResponse({status: "notification shown", windowId: window.id});
+    });
+    return true; // Required for async sendResponse
+  } else if (request.action === "closeNotification") {
+    // If we have a stored window ID, close it
+    if (notificationWindowId) {
+      chrome.windows.remove(notificationWindowId, () => {
+        notificationWindowId = null;
+        sendResponse({status: "notification closed"});
+      });
+    }
+    return true; // Required for async sendResponse
   }
 });
 
-// Update the session start handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request === "session_start") {
     console.log("New session starting, initializing stats");

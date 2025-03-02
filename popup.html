@@ -1,26 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+<div id="header">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Focus Mode + Lock-in Timer</title>
   <link rel="stylesheet" href="popup.css">
 </head>
-<h1>Focus Mode</h1>
+  <h1>Focus Mode</h1>
+</div>
 <body>
-    <select id="level">
-    <option>Focus Level: </option>
-    <option value="easy">Easy Mode</option>
-    <option value="hard">Hard Mode</option>
-    </select>
+    <div class="tooltip" id="levelTooltipContainer">
+      <select id="level">
+        <option value="">Focus Level: </option>
+        <option value="easy" selected>Easy Mode</option>
+        <option value="hard">Hard Mode</option>
+      </select>
+      <span class="tooltiptext">Mode selection is disabled during active focus session</span>
+    </div>
+    <br>
+    <div class="container">
+    <!-- <div class="container">
+      <button id="toggle-btn">Enable Focus Mode</button>
+    </div> -->
+    <div id="topicInput">
+      <br>
+      <input type="text" id="intopic" placeholder="Enter topic: "/>
+      <button id="submitTopic">Submit</button>
+      <div class="loader-container" id="loaderContainer">
+        <div class="loader"></div>
+        <div class="loading-text">Analyzing topic...</div>
+      </div>
+    </div>
     <br>
     <div class="container">
       <button id="toggle-btn">Enable Focus Mode</button>
-    </div>
-    <div id="topicInput">
-      <br>
-      <input type="text" id="intopic" />
-      <button id="submitTopic">Submit</button>
     </div>
     <br>
     <div id="timer">
@@ -28,11 +42,11 @@
         <br>
         <input type="number" id="timeInput" min="1">
         <div id="insideTimer">
-          <button id="startTimer" onclick="hideStart()">Start Timer</button>
-          <button id="pauseTimer">Pause Timer</button>
-          <button id="resumeTimer">Resume Timer</button>
+          <button id="startTimer" onclick="hideStart()">Start</button>
+          <button id="pauseTimer">Pause</button>
+          <button id="resumeTimer">Resume</button>
         </div>
-        <p id="timerDisplay">Time Left: --</p>
+        <p id="timerDisplay">Time Left: -- </p>
     </div>
     <div id="statsContainer"></div>
     <script type="module" src="popup.js"></script>

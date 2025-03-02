@@ -15,6 +15,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Retain topic input value if previously set
+  chrome.storage.local.get("topic", (data) => {
+    if (data.topic) {
+      document.getElementById("intopic").value = data.topic;
+    }
+  });
+
   // Listen for all messages with debug logs
   chrome.runtime.onMessage.addListener((message) => {
     console.log("Popup received message:", message);
@@ -53,6 +60,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     }
+  });
+
+  const pauseButton = document.getElementById('pauseTimer');
+  const resumeButton = document.getElementById('resumeTimer');
+  const startButton = document.getElementById('startTimer');
+
+  // Initially disable the pause button
+  pauseButton.disabled = true;
+
+  startButton.addEventListener('click', () => {
+      pauseButton.disabled = false;
+      resumeButton.disabled = true;
+  });
+
+  pauseButton.addEventListener('click', () => {
+      pauseButton.disabled = true;
+      resumeButton.disabled = false;
+  });
+
+  resumeButton.addEventListener('click', () => {
+      pauseButton.disabled = false;
+      resumeButton.disabled = true;
   });
 });
 
@@ -163,16 +192,57 @@ const storeTopicList = async (response) => {
 const activateTopicSubmission = () => {
   const topicInput = document.getElementById("intopic");
   const topicButton = document.getElementById("submitTopic");
+  const loaderContainer = document.getElementById("loaderContainer");
+
 
   topicButton.addEventListener("click", async() => {
     const topic = topicInput.value;
+    if (!topic.trim()) return;
+    
     console.log(topic);
+    
+    // Show loading animation
+    topicButton.disabled = true;
+    loaderContainer.style.display = "block";
+    
+    // Store the topic first
     await storeTopic(topic);
+    
+    // Generate topic list with LLM
     const instruction = "Your task is to generate a structured list of 20+ relevant topics based on a given user topic. The goal is to create a broader context to help determine whether a webpage is relevant to the user's interest. | Output Format: topic: string (Original user topic), description: string (Brief summary of the topic), list_of_topics: array (20+ relevant subtopics, each containing a short keyword-based description with exactly 5 keywords). | Guidelines: - Expand the given topic by identifying closely related subtopics, concepts, or terminologies. - Include synonyms, industry-specific jargon, and alternative ways the topic may be discussed. - If applicable, provide different perspectives (e.g., academic, technical, casual, industry use cases). - Prioritize topics that are likely to appear on webpages that genuinely cover the subject. - Do not generate overly broad or generic topics—keep them directly relevant. - Ensure that each subtopic in list_of_topics has an accompanying 5-keyword description that concisely represents its core concept. - Do not generate explanations, summaries, or commentary beyond the specified format.";
-    const response = await generateTopicList(topic, instruction);
-    const llmContent = response['choices'][0]['message']['content'];
-    await storeTopicList(llmContent);
+    try {
+      const response = await generateTopicList(topic, instruction);
+      const llmContent = response['choices'][0]['message']['content'];
+      await storeTopicList(llmContent);
+      console.log('stored topic list:', llmContent);  
+      
+      // Show success indication
+      topicInput.style.borderColor = "green";
+      setTimeout(() => {
+        topicInput.style.borderColor = "";
+      }, 2000);
+    } catch (error) {
+      console.error("Error generating topic list:", error);
+      // Show error indication
+      topicInput.style.borderColor = "red";
+      setTimeout(() => {
+        topicInput.style.borderColor = "";
+      }, 2000);
+    } finally {
+      // Hide loading animation
+      loaderContainer.style.display = "none";
+      topicButton.disabled = false;
+    }
   });
+  
+  // Allow pressing Enter in the input field to submit
+  topicInput.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+      topicButton.click();
+    }
+
+  });
+  
 }
 
 const activateTimer = () => {
@@ -186,10 +256,6 @@ const activateTimer = () => {
 
   // Notify background script that popup is open
   chrome.runtime.sendMessage("popup_opened");
-
-  function hideStart() {
-    document.getElementById("timerStart").style.display = "none";
-}
   
   // Restore button states when popup opens
   chrome.storage.local.get(["timerEnd", "timerRunning"], (data) => {
@@ -206,12 +272,11 @@ const activateTimer = () => {
       updateTimerDisplay();
   });
 
-
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
       if (isNaN(time) || time <= 0) return;
       const timerEnd = Date.now() + time * 60000;
-      chrome.storage.local.set({ timerEnd, timerPaused: null });
+      chrome.storage.local.set({ timerEnd, timerPaused: null, timerRunning: true });
 
       timerRunning = true;
       updateTimerDisplay();
@@ -226,7 +291,7 @@ const activateTimer = () => {
               if (!data.timerEnd) return;
 
               const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null });
+              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null, timerRunning: false });
 
               chrome.runtime.sendMessage("pause_timer");
           });
@@ -244,43 +309,7 @@ const activateTimer = () => {
               if (!data.timerPaused) return;
 
               const newEndTime = Date.now() + data.timerPaused;
-              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null });
-
-              chrome.runtime.sendMessage("resume_timer");
-              updateTimerDisplay();
-          });
-
-          timerRunning = true;
-          pauseButton.disabled = false;
-          resumeButton.disabled = true;
-      }
-  });
-
-  pauseButton.addEventListener("click", () => {
-      if (timerRunning) {
-          chrome.storage.local.get("timerEnd", (data) => {
-              if (!data.timerEnd) return;
-
-              const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null });
-
-              chrome.runtime.sendMessage("pause_timer");
-          });
-
-          timerRunning = false;
-          startButton.disabled = false;
-          pauseButton.disabled = true;
-          resumeButton.disabled = false;
-      }
-  });
-
-  resumeButton.addEventListener("click", () => {
-      if (!timerRunning) {
-          chrome.storage.local.get("timerPaused", (data) => {
-              if (!data.timerPaused) return;
-
-              const newEndTime = Date.now() + data.timerPaused;
-              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null });
+              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null, timerRunning: true });
 
               chrome.runtime.sendMessage("resume_timer");
               updateTimerDisplay();
@@ -293,44 +322,62 @@ const activateTimer = () => {
   });
 
   function updateTimerDisplay() {
-      chrome.storage.local.get(["timerEnd"], (data) => {
-          if (!data.timerEnd) return;
-
-          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-          const minutesLeft = Math.floor(timeLeftSeconds / 60);
-          const secondsLeft = timeLeftSeconds % 60;
-
-          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-
-          // Keep updating every second while popup is open
-          setTimeout(updateTimerDisplay, 1000);
-      chrome.storage.local.get(["timerEnd"], (data) => {
-          if (!data.timerEnd) return;
-
-          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-          const minutesLeft = Math.floor(timeLeftSeconds / 60);
-          const secondsLeft = timeLeftSeconds % 60;
-
-          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-
-          // Keep updating every second while popup is open
-          setTimeout(updateTimerDisplay, 1000);
+      chrome.storage.local.get(["timerEnd", "timerPaused"], (data) => {
+          if (data.timerEnd) {
+              const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+              const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
+              const minutesLeft = Math.floor(timeLeftSeconds / 60);
+              const secondsLeft = timeLeftSeconds % 60;
+              timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
+              if (timeLeftMilliseconds > 0) {
+                  setTimeout(updateTimerDisplay, 1000);
+              } else {
+                  timerDisplay.textContent = "Time's up!";
+                  startButton.disabled = false;
+                  pauseButton.disabled = true;
+                  resumeButton.disabled = true;
+                  timerRunning = false;
+              }
+          } else if (data.timerPaused) {
+              const pausedTime = data.timerPaused;
+              const timeLeftSeconds = Math.floor(pausedTime / 1000);
+              const minutesLeft = Math.floor(timeLeftSeconds / 60);
+              const secondsLeft = timeLeftSeconds % 60;
+              timerDisplay.textContent = `Paused: ${minutesLeft}m ${secondsLeft}s`;
+          } else {
+              timerDisplay.textContent = "Time Left: --";
+          }
       });
-  });
   }
 
   updateTimerDisplay();
 }
 
 const activateToggleButton = () => {
-  // Get the toggle button
+  // Get the toggle button and level selector
   const toggleButton = document.getElementById('toggle-btn');
+  const levelSelector = document.getElementById('level');
+  const tooltipContainer = document.getElementById('levelTooltipContainer');
 
   // Load the current state from Chrome storage
-  chrome.storage.sync.get(['focusModeEnabled'], function (result) {
+  chrome.storage.sync.get(['focusModeEnabled', 'focusLevel'], function (result) {
     const isEnabled = result.focusModeEnabled || false;
+    const currentLevel = result.focusLevel || 'easy';
+    
+    // Set default selection to the stored level or 'easy'
+    for(let i = 0; i < levelSelector.options.length; i++) {
+      if(levelSelector.options[i].value === currentLevel) {
+        levelSelector.selectedIndex = i;
+        break;
+      }
+    }
+    
+    // Toggle level selector disabled state based on focus mode
+    levelSelector.disabled = isEnabled;
+    
+    // Only show tooltip when the mode is actually disabled
+    tooltipContainer.classList.toggle('has-tooltip', isEnabled);
+    
     updateButtonText(isEnabled);
   });
 
@@ -339,16 +386,27 @@ const activateToggleButton = () => {
     chrome.storage.sync.get(['focusModeEnabled'], function (result) {
       const isEnabled = result.focusModeEnabled || false;
       const newState = !isEnabled;
+      const selectedLevel = levelSelector.value || 'easy';
 
       if (newState) {
         // Starting a new focus session
         chrome.runtime.sendMessage("session_start");
+        // Save the selected focus level
+        chrome.storage.sync.set({ focusLevel: selectedLevel });
+        // Disable the level selector during active session
+        levelSelector.disabled = true;
+        // Show tooltip for disabled selector
+        tooltipContainer.classList.add('has-tooltip');
         // Clear any previous session stats display
         const statsContainer = document.getElementById("statsContainer");
         if (statsContainer) statsContainer.innerHTML = '';
       } else {
         // Ending the session - compute and show stats
         chrome.runtime.sendMessage("end_session");
+        // Re-enable the level selector when session ends
+        levelSelector.disabled = false;
+        // Hide tooltip when selector is enabled
+        tooltipContainer.classList.remove('has-tooltip');
       }
 
       // Save the new state to Chrome storage

@@ -1,6 +1,6 @@
 const BASE_URL = 'http://127.0.0.1:1234/';
 const LLM_MODEL = 'llama-3.2-3b-instruct';
-const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response."
+const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - !! Especially be aware if the user is procastinating and accessing social media platform (instagram, tiktok, snapchat, facebook, x, twitter, etc) return false, score = 0 - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.6-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.3]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response."
 
 /**
  * Extracts the main content of a webpage, handling static and dynamic sites.
@@ -29,35 +29,14 @@ const getPageText = () => {
 
     /** 2. Fallback: Try extracting from semantic elements (<main>, <article>) */
     if (!content || content.length < 100) {
-        let elem = document.querySelector("main, article");
-        if (elem && elem.innerText.trim().length > 100) {
-            content = elem.innerText.trim();
-            console.log("Extracted from <main> or <article>");
-        }
-    }
-
-    /** 3. Check common ID/class names */
-    if (!content || content.length < 100) {
-        let elem = document.querySelector("#content, .content, #main, .main-content, #post, .post-content");
-        if (elem && elem.innerText.trim().length > 100) {
-            content = elem.innerText.trim();
-            console.log("Extracted from common ID/class names");
-        }
-    }
-
-    /** 4. Find the largest text-heavy block if no structured content is found */
-    if (!content || content.length < 100) {
-        const getLargestTextBlock = () => {
-            let elements = [...document.querySelectorAll("div, section, article")];
-            let largest = elements.reduce((prev, curr) =>
-                curr.innerText.length > prev.innerText.length ? curr : prev, { innerText: "" }
-            );
-            return largest.innerText.trim();
-        };
-        
-        content = getLargestTextBlock();
-        if (content.length > 100) {
-            console.log("Extracted from largest text block");
+        const selectors = ["#content", "article", "main", "body", "search"];
+        for (let selector of selectors) {
+            const elem = document.querySelector(selector);
+            if (elem && elem.innerText && elem.innerText.length > 100) {
+                content += elem.innerText;
+                console.log(`Using selector "${selector}". Content size: ${content.length}`);
+                break;
+            }
         }
     }
 
@@ -110,7 +89,7 @@ const getPageText = () => {
         console.log("Content too long, truncating to 20000 characters");
         content = content.slice(0, 20000);
     }
-
+    // console.log(content)
     return content;
 };
 
@@ -125,6 +104,7 @@ const getLLMOpinion = async (page_content) => {
 
 	// Construct the prompt using pageContent and topic.
     console.log("Topic Query: " + topic);
+    // console.log("Related Topics: " + ref_context);
     const body = JSON.stringify({
         messages: [
             { "role": "system", "content": CUSTOM_INSTRUCTION},
@@ -156,6 +136,7 @@ const getLLMOpinion = async (page_content) => {
         max_tokens: -1,
         temperature: 0.2
     })
+    // console.log(body)
     
     // attempt to call a locally hosted LLM.
 	try {
@@ -177,66 +158,212 @@ const getStoredData = async () => {
         const result = await chrome.storage.local.get(["topic", "topicList"]);
         return {
             topic: result.topic || null,
-            topicList: result.topicList || null
+            ref_context: result.topicList || null  // Map topicList to ref_context
         };
     } catch (err) {
         console.error("Failed to retrieve stored data", err);
-        return { topic: null, topicList: null };
+        return { topic: null, ref_context: null };
     }
 };
 
-(async function () {
-    const lockinMode = await chrome.storage.sync.get("focusModeEnabled");
-    if (!lockinMode.focusModeEnabled) {
-      return;
-    } 
-  
-    // do locked in stuff ig
-    console.log("index script called!");
-
-    // get
-    const allText = getPageText();
-    if (!allText || allText.length == 0) {
-        console.log("No content found on the page.");
-        return;
+async function showNotification() {
+    // Get focus level from storage
+    const result = await chrome.storage.sync.get(["focusLevel"]);
+    const focusLevel = result.focusLevel || 'easy';
+    
+    if (focusLevel === 'hard') {
+        // Hard mode: Use popup window notification (more intrusive)
+        chrome.runtime.sendMessage({ action: "showNotification" });
+    } else {
+        // Easy mode: Use in-page notification
+        showInPageNotification();
     }
-    console.log(allText);
-    const instruction = `Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response.`;
-    const opinion = await getLLMOpinion(allText, instruction);
-    const responseContent = opinion['choices'][0]['message']['content'];
-    console.log(responseContent);
+}
+
+function showInPageNotification() {
+    console.log("Showing in-page notification");
+    
+    // Create the notification element
+    const notification = document.createElement('div');
+    notification.id = 'focus-mode-notification';
+    notification.innerHTML = `
+        <div class="focus-notification-content">
+            <div class="focus-notification-icon">⚠️</div>
+            <div class="focus-notification-text">
+                <h3>Attention!</h3>
+                <p>This page seems off-topic. Stay focused!</p>
+            </div>
+            <button class="focus-notification-close">✕</button>
+        </div>
+    `;
+    
+    // Add styles
+    const style = document.createElement('style');
+    style.textContent = `
+        #focus-mode-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, #ff8a65, #ff7043);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 99999;
+            width: 300px;
+            padding: 0;
+            animation: slide-up 0.4s ease-out forwards;
+            overflow: hidden;
+        }
+        
+        .focus-notification-content {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+        }
+        
+        .focus-notification-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+        
+        .focus-notification-text {
+            flex-grow: 1;
+            text-align: left;
+        }
+        
+        .focus-notification-text h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .focus-notification-text p {
+            margin: 5px 0 0;
+            font-size: 14px;
+        }
+        
+        .focus-notification-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+            opacity: 0.8;
+        }
+        
+        .focus-notification-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(notification);
+    
+    // Add close button functionality
+    const closeButton = notification.querySelector('.focus-notification-close');
+    closeButton.addEventListener('click', () => {
+        notification.style.animation = 'slide-down 0.3s forwards';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    });
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            notification.style.animation = 'slide-down 0.3s forwards';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 10000);
+}
+
+// Add the slide-down animation
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+@keyframes slide-down {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+}
+`;
+document.head.appendChild(styleSheet);
+
+(async function () {
+    // Get focus mode status correctly
     try {
-        const llmResult = JSON.parse(responseContent);
-        // Record the relevancy score for stats (score is 0 if not relevant)
-        const score = llmResult.bool_relevant ? max(1, llmResult.relevant + 0.1) : 0;
-        chrome.runtime.sendMessage({ action: "recordScore", score });
-        if (!llmResult.bool_relevant) {
-            showNotification();
+        const result = await chrome.storage.sync.get(["focusModeEnabled"]);
+        if (!result || !result.focusModeEnabled) {
+            console.log("Focus mode not enabled, exiting content script");
+            return;
+        }
+        
+        console.log("Focus mode is enabled, running content script");
+
+        // get content
+        const allText = getPageText();
+        if (!allText || allText.length == 0) {
+            console.log("No content found on the page.");
+            return;
+        }
+        
+        const opinion = await getLLMOpinion(allText);
+        if (!opinion || !opinion.choices || !opinion.choices[0] || !opinion.choices[0].message) {
+            console.error("Invalid response from LLM", opinion);
+            return;
+        }
+        
+        const responseContent = opinion.choices[0].message.content;
+        console.log("LLM response:", responseContent);
+        
+        try {
+            const llmResult = JSON.parse(responseContent);
+            // Record the relevancy score for stats (score is 0 if not relevant)
+            // const score = llmResult.bool_relevant ? Math.min(1, llmResult.relevant) : 0;
+            const score = llmResult.relevant;
+            console.log(`Relevancy score: ${score}, bool_relevant: ${llmResult.bool_relevant}`);
+            
+            chrome.runtime.sendMessage({ action: "recordScore", score });
+            
+            if (!llmResult.bool_relevant) {
+                console.log("Page not relevant, showing notification");
+                showNotification();
+            }
+        } catch (error) {
+            console.error("Failed to parse LLM response:", error);
         }
     } catch (error) {
-        console.error("Failed to parse LLM response:", error);
+        console.error("Error in content script:", error);
     }
 })();
 
-// HOW TO HANDLE ENDING A SESSION?
-// 1. When does a session end?
-
 /*
-A session will end when a) the timer expires or b) the user manually ends a focus session.
-
-When the session ends:
-
-TODO
-// we want to set focusModeEnabled to False.
-// we want to remove any list of topics in storage.
-// timer should be reset to 0
-
-Other concerns:
-
+Some concerns:
 * Do we want the extension to notify the user as soon as they go off-track, or set a small timeout (1-3 min?)
 * What happens to these timeouts when the user switches tabs?
 * If the user spends more than a certain amount of time (10-15 min) off-track, do we disable focus mode?
 * Can we overwhelm the LLM by continuously opening tabs?  
-
 */
 
