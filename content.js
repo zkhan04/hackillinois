@@ -203,7 +203,7 @@ const getStoredTopicList = async () => {
             try {
                 const llmResult = JSON.parse(responseContent);
                 // Record the relevancy score for stats (score is 0 if not relevant)
-                const score = llmResult.bool_relevant ? llmResult.relevant : 0;
+                const score = llmResult.bool_relevant ? max(1, llmResult.relevant + 0.1) : 0;
                 chrome.runtime.sendMessage({ action: "recordScore", score });
                 if (!llmResult.bool_relevant) {
                     showNotification();
