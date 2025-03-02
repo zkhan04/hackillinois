@@ -20,13 +20,13 @@ function requestPermission() {
     });
 }
 
-async function showNotification(id, options) {
+async function showNotification() {
     if (Notification.permission === "granted") {
-        await chrome.notifications.create(id, options);
+        await chrome.notifications.create(_id, _opt);
     } else if (Notification.permission === "default") {
         requestPermission();
         if (Notification.permission === "granted") {
-            await chrome.notifications.create(id, options);
+            await chrome.notifications.create(_id, _opt);
         }
     }
 }
