@@ -24,7 +24,7 @@ const getLLMModels = async () => {
 
 const getLLMOpinion = async (page_content, custom_instruction) => {
 	// Construct the prompt using pageContent and topic.
-    console.log(await getStoredTopic());
+    console.log("Topic Query: " + await getStoredTopic());
     const ref_context = await getStoredTopicList();
     const body = JSON.stringify({
         messages: [
