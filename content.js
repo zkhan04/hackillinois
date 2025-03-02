@@ -8,7 +8,7 @@ const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relev
  * @returns {string} The page content
  */
 const getPageText = () => {
-    const content = document.querySelector("#content");
+    const content = document.querySelector("#content") || document.querySelector("main") || document.body;
 
     console.log(`Content size: ${content.innerText.length}`);
 
@@ -105,6 +105,7 @@ const getStoredData = async () => {
         try {
             const llmResult = JSON.parse(responseContent);
             if (!llmResult.bool_relevant) {
+                // replace with whatever notifying callback we want!
                 showNotification();
             }
         } catch (error) {
