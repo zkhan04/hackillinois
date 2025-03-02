@@ -320,30 +320,31 @@ const activateTimer = () => {
       }
   });
 
-  // Remove duplicate event listeners
   function updateTimerDisplay() {
-      chrome.storage.local.get(["timerEnd"], (data) => {
-          if (!data.timerEnd) {
-              timerDisplay.textContent = "Time Left: --";
-              return;
-          }
-
-          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-          const minutesLeft = Math.floor(timeLeftSeconds / 60);
-          const secondsLeft = timeLeftSeconds % 60;
-
-          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-
-          // Keep updating every second while popup is open
-          if (timeLeftMilliseconds > 0) {
-              setTimeout(updateTimerDisplay, 1000);
+      chrome.storage.local.get(["timerEnd", "timerPaused"], (data) => {
+          if (data.timerEnd) {
+              const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+              const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
+              const minutesLeft = Math.floor(timeLeftSeconds / 60);
+              const secondsLeft = timeLeftSeconds % 60;
+              timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
+              if (timeLeftMilliseconds > 0) {
+                  setTimeout(updateTimerDisplay, 1000);
+              } else {
+                  timerDisplay.textContent = "Time's up!";
+                  startButton.disabled = false;
+                  pauseButton.disabled = true;
+                  resumeButton.disabled = true;
+                  timerRunning = false;
+              }
+          } else if (data.timerPaused) {
+              const pausedTime = data.timerPaused;
+              const timeLeftSeconds = Math.floor(pausedTime / 1000);
+              const minutesLeft = Math.floor(timeLeftSeconds / 60);
+              const secondsLeft = timeLeftSeconds % 60;
+              timerDisplay.textContent = `Paused: ${minutesLeft}m ${secondsLeft}s`;
           } else {
-              timerDisplay.textContent = "Time's up!";
-              startButton.disabled = false;
-              pauseButton.disabled = true;
-              resumeButton.disabled = true;
-              timerRunning = false;
+              timerDisplay.textContent = "Time Left: --";
           }
       });
   }
