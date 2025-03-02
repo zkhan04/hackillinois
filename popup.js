@@ -5,7 +5,86 @@ document.addEventListener("DOMContentLoaded", () => {
   activateTimer();
   activateToggleButton();
   activateTopicSubmission();
+  activateEndSessionButton(); // Ensure the "End Session" button is hooked up
+
+  // Check for final stats on popup load
+  chrome.storage.local.get("finalStats", (data) => {
+    if (data.finalStats) {
+      console.log("Found finalStats on load", data.finalStats);
+      updateStatsUI(data.finalStats);
+    }
+  });
+
+  // Listen for all messages with debug logs
+  chrome.runtime.onMessage.addListener((message) => {
+    console.log("Popup received message:", message);
+    
+    if (message.action === "sessionEnded") {
+      if (message.stats) {
+        console.log("Received stats directly in message:", message.stats);
+        updateStatsUI(message.stats);
+      } else {
+        chrome.storage.local.get("finalStats", (data) => {
+          if (data.finalStats) {
+            console.log("Fetched finalStats from storage:", data.finalStats);
+            updateStatsUI(data.finalStats);
+          } else {
+            console.log("No finalStats found in storage.");
+          }
+        });
+      }
+    } 
+    // Add handling for recordScore messages to update UI in real-time
+    else if (message.action === "recordScore") {
+      chrome.storage.local.get("sessionStats", (data) => {
+        if (data.sessionStats) {
+          console.log("Updating UI with current sessionStats", data.sessionStats);
+          const stats = data.sessionStats;
+          const average = stats.count > 0 ? stats.totalScore / stats.count : 0;
+          
+          // Create a temporary stats object for real-time display
+          const currentStats = {
+            averageScore: average,
+            count: stats.count,
+            message: average >= 0.7 ? "Looking good! Keep it up!" : "Try to stay on topic"
+          };
+          
+          updateStatsUI(currentStats);
+        }
+      });
+    }
+  });
 });
+
+function updateStatsUI(finalStats) {
+  const statsContainer = document.getElementById("statsContainer");
+  if (statsContainer) {
+    if (finalStats.isEasterEgg) {
+      // Easter egg display for when no sites were visited
+      statsContainer.innerHTML = `
+        <h3>Session Summary</h3>
+        <div class="easter-egg">
+          <p style="font-size: 24px;">👻</p>
+          <p>${finalStats.message}</p>
+        </div>
+      `;
+      statsContainer.style.animation = "ghost-float 3s infinite ease-in-out";
+    } else {
+      // Normal stats display
+      statsContainer.innerHTML = `
+        <h3>Session Summary</h3>
+        <p>Evaluated websites: ${finalStats.count}</p>
+        <p>Average Focus Score: ${(finalStats.averageScore * 100).toFixed(1)}%</p>
+        <p>${finalStats.message}</p>
+      `;
+      // Trigger simple confetti simulation if score is high
+      if (finalStats.averageScore >= 0.7) {
+        statsContainer.style.animation = "confetti 2s ease-out";
+        setTimeout(() => statsContainer.style.animation = "", 2000);
+      }
+    }
+  }
+}
 
 /**
  * Generates a structured list of 20+ relevant topics based on a given user topic.
@@ -261,6 +340,17 @@ const activateToggleButton = () => {
       const isEnabled = result.focusModeEnabled || false;
       const newState = !isEnabled;
 
+      if (newState) {
+        // Starting a new focus session
+        chrome.runtime.sendMessage("session_start");
+        // Clear any previous session stats display
+        const statsContainer = document.getElementById("statsContainer");
+        if (statsContainer) statsContainer.innerHTML = '';
+      } else {
+        // Ending the session - compute and show stats
+        chrome.runtime.sendMessage("end_session");
+      }
+
       // Save the new state to Chrome storage
       chrome.storage.sync.set({ focusModeEnabled: newState }, function () {
         updateButtonText(newState);
@@ -271,5 +361,16 @@ const activateToggleButton = () => {
   // Update the button text based on the current state
   function updateButtonText(isEnabled) {
     toggleButton.textContent = isEnabled ? 'Disable Focus Mode' : 'Enable Focus Mode';
+  }
+}
+
+function activateEndSessionButton() {
+  const endButton = document.getElementById("endSessionButton");
+  if (endButton) {
+    endButton.addEventListener("click", () => {
+      chrome.runtime.sendMessage("end_session", (response) => {
+        console.log(response.status);
+      });
+    });
   }
 }

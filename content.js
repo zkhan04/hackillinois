@@ -9,16 +9,17 @@ const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relev
  * @returns {string} Extracted text content.
  */
 const getPageText = () => {
+
     let content = "";
 
-    /** 1. Use Mozilla's Readability.js if available */
+    // Attempt to use Mozilla's Readability if available
     try {
         if (typeof Readability !== "undefined") {
             const docClone = document.cloneNode(true); // Clone document to avoid modifications
             const reader = new Readability(docClone);
             const article = reader.parse();
             if (article && article.textContent && article.textContent.length > 100) {
-                content = article.textContent.trim();
+                content = article.textContent;
                 console.log(`Using Readability extraction. Content size: ${content.length}`);
             }
         }
@@ -71,25 +72,28 @@ const getPageText = () => {
     const url = window.location.href;
 
     if (url.includes("youtube.com")) {
-        let ytSearch = document.querySelector('input#search');
+        const ytSearch = document.querySelector('input#search');
         if (ytSearch && ytSearch.value) {
             searchQuery = `Search Query: ${ytSearch.value}`;
             console.log(`Extracted YouTube search query: ${ytSearch.value}`);
         }
     } else if (url.includes("google.com/search")) {
-        let googleSearch = document.querySelector('input[name="q"]');
+        // Google search bar
+        const googleSearch = document.querySelector('input[name="q"]');
         if (googleSearch && googleSearch.value) {
             searchQuery = `Search Query: ${googleSearch.value}`;
             console.log(`Extracted Google search query: ${googleSearch.value}`);
         }
     } else if (url.includes("bing.com/search")) {
-        let bingSearch = document.querySelector('input[name="q"]');
+        // Bing search bar
+        const bingSearch = document.querySelector('input[name="q"]');
         if (bingSearch && bingSearch.value) {
             searchQuery = `Search Query: ${bingSearch.value}`;
             console.log(`Extracted Bing search query: ${bingSearch.value}`);
         }
     } else if (url.includes("duckduckgo.com/")) {
-        let ddgSearch = document.querySelector('input[name="q"]');
+        // DuckDuckGo search bar
+        const ddgSearch = document.querySelector('input[name="q"]');
         if (ddgSearch && ddgSearch.value) {
             searchQuery = `Search Query: ${ddgSearch.value}`;
             console.log(`Extracted DuckDuckGo search query: ${ddgSearch.value}`);
@@ -101,15 +105,14 @@ const getPageText = () => {
         content = `${searchQuery}\n\n${content}`;
     }
 
-    /** 7. Truncate content if it exceeds 20,000 characters */
+    // Truncate content if it exceeds the maximum allowed length
     if (content.length > 20000) {
-        console.log("Content too long, truncating to 20,000 characters");
+        console.log("Content too long, truncating to 20000 characters");
         content = content.slice(0, 20000);
     }
 
     return content;
 };
-
 
 /**
  * Asks the LLM whether the current webpage is relevant to the current topic
@@ -184,24 +187,34 @@ const getStoredData = async () => {
 
 (async function () {
     const lockinMode = await chrome.storage.sync.get("focusModeEnabled");
-    if (lockinMode.focusModeEnabled) {
-        // do locked in stuff ig
-        console.log("index script called!");
+    if (!lockinMode.focusModeEnabled) {
+      return;
+    } 
+  
+    // do locked in stuff ig
+    console.log("index script called!");
 
-        const allText = getPageText();
-        const opinion = await getLLMOpinion(allText);
-        const responseContent = opinion['choices'][0]['message']['content'];
-        console.log(responseContent);
-
-        try {
-            const llmResult = JSON.parse(responseContent);
-            if (!llmResult.bool_relevant) {
-                // replace with whatever notifying callback we want!
-                showNotification();
-            }
-        } catch (error) {
-            console.error("Failed to parse LLM response:", error);
+    // get
+    const allText = getPageText();
+    if (!allText || allText.length == 0) {
+        console.log("No content found on the page.");
+        return;
+    }
+    console.log(allText);
+    const instruction = `Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response.`;
+    const opinion = await getLLMOpinion(allText, instruction);
+    const responseContent = opinion['choices'][0]['message']['content'];
+    console.log(responseContent);
+    try {
+        const llmResult = JSON.parse(responseContent);
+        // Record the relevancy score for stats (score is 0 if not relevant)
+        const score = llmResult.bool_relevant ? max(1, llmResult.relevant + 0.1) : 0;
+        chrome.runtime.sendMessage({ action: "recordScore", score });
+        if (!llmResult.bool_relevant) {
+            showNotification();
         }
+    } catch (error) {
+        console.error("Failed to parse LLM response:", error);
     }
 })();
 
