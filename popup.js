@@ -363,18 +363,6 @@ const activateTimer = () => {
 
           // Keep updating every second while popup is open
           setTimeout(updateTimerDisplay, 1000);
-      chrome.storage.local.get(["timerEnd"], (data) => {
-          if (!data.timerEnd) return;
-
-          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-          const minutesLeft = Math.floor(timeLeftSeconds / 60);
-          const secondsLeft = timeLeftSeconds % 60;
-
-          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-
-          // Keep updating every second while popup is open
-          setTimeout(updateTimerDisplay, 1000);
       });
 
   });
@@ -382,7 +370,7 @@ const activateTimer = () => {
 
   updateTimerDisplay();
 }
-}
+
 const activateToggleButton = () => {
   // Get the toggle button and level selector
   const toggleButton = document.getElementById('toggle-btn');
