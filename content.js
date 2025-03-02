@@ -26,9 +26,10 @@ const getPageText = () => {
  * @returns {Promise<{bool_relevant: boolean, relevant: number}>} A promise resolving to an object containing the LLM's opinion on whether the webpage is relevant, given as a boolean and a number between 0 and 1
  */
 const getLLMOpinion = async (page_content) => {
+    const {topic, ref_context} = await getStoredData();
+
 	// Construct the prompt using pageContent and topic.
-    console.log("Topic Query: " + await getStoredTopic());
-    const ref_context = await getStoredTopicList();
+    console.log("Topic Query: " + topic);
     const body = JSON.stringify({
         messages: [
             { "role": "system", "content": CUSTOM_INSTRUCTION},
@@ -61,7 +62,7 @@ const getLLMOpinion = async (page_content) => {
         temperature: 0.2
     })
     
-
+    // attempt to call a locally hosted LLM.
 	try {
 		const response = await fetch(`${BASE_URL}api/v0/chat/completions`, {
 			method: 'POST',
@@ -76,61 +77,34 @@ const getLLMOpinion = async (page_content) => {
 	}
 };
 
-/**
- * Retrieves the currently stored topic from chrome.storage.local
- * @returns {Promise<string>} The current topic, or null if none is stored
- */
-const getStoredTopic = async () => {
+const getStoredData = async () => {
     try {
-        const result = await chrome.storage.local.get('topic');
-        if (result.topic) {
-            return result.topic;
-        } else {
-            console.log('No topic found in storage');
-            return null;
-        }
+        const result = await chrome.storage.local.get(["topic", "topicList"]);
+        return {
+            topic: result.topic || null,
+            topicList: result.topicList || null
+        };
     } catch (err) {
-        console.error('Failed to retrieve LLM response', err);
-        return null;
-    }
-};
-
-/**
- * Retrieves the currently stored LLM topic list from chrome.storage.local
- * @returns {Promise<object>} The current LLM topic list, or null if none is stored
- */
-const getStoredTopicList = async () => {
-    try {
-        const result = await chrome.storage.local.get('topicList');
-        if (result.topicList) {
-            return result.topicList;
-        } else {
-            console.log('No LLM response found in storage');
-            return null;
-        }
-    } catch (err) {
-        console.error('Failed to retrieve LLM response', err);
-        return null;
+        console.error("Failed to retrieve stored data", err);
+        return { topic: null, topicList: null };
     }
 };
 
 (async function () {
     const lockinMode = await chrome.storage.sync.get("focusModeEnabled");
-
     if (lockinMode.focusModeEnabled) {
         // do locked in stuff ig
         console.log("index script called!");
 
-        (async function () {
-            // get
-            const allText = getPageText();
-            const opinion = await getLLMOpinion(allText);
-            console.log(opinion['choices'][0]['message']['content']);
+        const allText = getPageText();
+        const opinion = await getLLMOpinion(allText);
 
-        })();
-    } else {
-		console.log("not locked in");
-	}
+        if(opinion) {
+            // notify user if necessary
+        } else {
+            // 
+        }
+    }
 })();
 
 // HOW TO HANDLE ENDING A SESSION?
