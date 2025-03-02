@@ -8,6 +8,7 @@ const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relev
  * @returns {string} The page content
  */
 const getPageText = () => {
+
     let content = "";
 
     // Attempt to use Mozilla's Readability if available
@@ -93,9 +94,10 @@ const getPageText = () => {
  * @returns {Promise<{bool_relevant: boolean, relevant: number}>} A promise resolving to an object containing the LLM's opinion on whether the webpage is relevant, given as a boolean and a number between 0 and 1
  */
 const getLLMOpinion = async (page_content) => {
+    const {topic, ref_context} = await getStoredData();
+
 	// Construct the prompt using pageContent and topic.
-    console.log("Topic Query: " + await getStoredTopic());
-    const ref_context = await getStoredTopicList();
+    console.log("Topic Query: " + topic);
     const body = JSON.stringify({
         messages: [
             { "role": "system", "content": CUSTOM_INSTRUCTION},
@@ -128,7 +130,7 @@ const getLLMOpinion = async (page_content) => {
         temperature: 0.2
     })
     
-
+    // attempt to call a locally hosted LLM.
 	try {
 		const response = await fetch(`${BASE_URL}api/v0/chat/completions`, {
 			method: 'POST',
@@ -143,79 +145,50 @@ const getLLMOpinion = async (page_content) => {
 	}
 };
 
-/**
- * Retrieves the currently stored topic from chrome.storage.local
- * @returns {Promise<string>} The current topic, or null if none is stored
- */
-const getStoredTopic = async () => {
+const getStoredData = async () => {
     try {
-        const result = await chrome.storage.local.get('topic');
-        if (result.topic) {
-            return result.topic;
-        } else {
-            console.log('No topic found in storage');
-            return null;
-        }
+        const result = await chrome.storage.local.get(["topic", "topicList"]);
+        return {
+            topic: result.topic || null,
+            topicList: result.topicList || null
+        };
     } catch (err) {
-        console.error('Failed to retrieve LLM response', err);
-        return null;
-    }
-};
-
-/**
- * Retrieves the currently stored LLM topic list from chrome.storage.local
- * @returns {Promise<object>} The current LLM topic list, or null if none is stored
- */
-const getStoredTopicList = async () => {
-    try {
-        const result = await chrome.storage.local.get('topicList');
-        if (result.topicList) {
-            return result.topicList;
-        } else {
-            console.log('No LLM response found in storage');
-            return null;
-        }
-    } catch (err) {
-        console.error('Failed to retrieve LLM response', err);
-        return null;
+        console.error("Failed to retrieve stored data", err);
+        return { topic: null, topicList: null };
     }
 };
 
 (async function () {
     const lockinMode = await chrome.storage.sync.get("focusModeEnabled");
+    if (!lockInMode.focusModeEnabled) {
+      return;
+    } 
+  
+    // do locked in stuff ig
+    console.log("index script called!");
 
-    if (lockinMode.focusModeEnabled) {
-        // do locked in stuff ig
-        console.log("index script called!");
-
-        (async function () {
-            // get
-            const allText = getPageText();
-            if (!allText || allText.length == 0) {
-                console.log("No content found on the page.");
-                return;
-            }
-            console.log(allText);
-            const instruction = `Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response.`;
-            const opinion = await getLLMOpinion(allText, instruction);
-            const responseContent = opinion['choices'][0]['message']['content'];
-            console.log(responseContent);
-            try {
-                const llmResult = JSON.parse(responseContent);
-                // Record the relevancy score for stats (score is 0 if not relevant)
-                const score = llmResult.bool_relevant ? max(1, llmResult.relevant + 0.1) : 0;
-                chrome.runtime.sendMessage({ action: "recordScore", score });
-                if (!llmResult.bool_relevant) {
-                    showNotification();
-                }
-            } catch (error) {
-                console.error("Failed to parse LLM response:", error);
-            }
-
-        })();
-    } else {
-		console.log("not locked in");
-	}
+    // get
+    const allText = getPageText();
+    if (!allText || allText.length == 0) {
+        console.log("No content found on the page.");
+        return;
+    }
+    console.log(allText);
+    const instruction = `Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response.`;
+    const opinion = await getLLMOpinion(allText, instruction);
+    const responseContent = opinion['choices'][0]['message']['content'];
+    console.log(responseContent);
+    try {
+        const llmResult = JSON.parse(responseContent);
+        // Record the relevancy score for stats (score is 0 if not relevant)
+        const score = llmResult.bool_relevant ? max(1, llmResult.relevant + 0.1) : 0;
+        chrome.runtime.sendMessage({ action: "recordScore", score });
+        if (!llmResult.bool_relevant) {
+            showNotification();
+        }
+    } catch (error) {
+        console.error("Failed to parse LLM response:", error);
+    }
 })();
 
 // HOW TO HANDLE ENDING A SESSION?

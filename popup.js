@@ -210,13 +210,6 @@ const activateTimer = () => {
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
       if (isNaN(time) || time <= 0) return;
-
-      timerEnd = Date.now() + time * 60000;
-      chrome.storage.local.set({ timerEnd, timerPaused: null });
-
-      timerRunning = true;
-      if (isNaN(time) || time <= 0) return;
-
       const timerEnd = Date.now() + time * 60000;
       chrome.storage.local.set({ timerEnd, timerPaused: null });
 
