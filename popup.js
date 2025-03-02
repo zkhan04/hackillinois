@@ -91,8 +91,6 @@ const activateTimer = () => {
   const startButton = document.getElementById("startTimer");
   const pauseButton = document.getElementById("pauseTimer");
   const resumeButton = document.getElementById("resumeTimer");
-  const pauseButton = document.getElementById("pauseTimer");
-  const resumeButton = document.getElementById("resumeTimer");
   const timerDisplay = document.getElementById("timerDisplay");
 
   let timerRunning = false;
@@ -124,7 +122,7 @@ const activateTimer = () => {
       const time = parseInt(timeInput.value);
       if (isNaN(time) || time <= 0) return;
 
-      const timerEnd = Date.now() + time * 60000;
+      timerEnd = Date.now() + time * 60000;
       chrome.storage.local.set({ timerEnd, timerPaused: null });
 
       timerRunning = true;
@@ -174,11 +172,6 @@ const activateTimer = () => {
           pauseButton.disabled = false;
           resumeButton.disabled = true;
       }
-  });
-
-      startButton.disabled = true;
-      pauseButton.disabled = false;
-      resumeButton.disabled = true;
   });
 
   pauseButton.addEventListener("click", () => {
@@ -243,8 +236,8 @@ const activateTimer = () => {
           // Keep updating every second while popup is open
           setTimeout(updateTimerDisplay, 1000);
       });
+  });
   }
-
 
   updateTimerDisplay();
 }
