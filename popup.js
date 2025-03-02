@@ -214,6 +214,7 @@ const activateTopicSubmission = () => {
       const response = await generateTopicList(topic, instruction);
       const llmContent = response['choices'][0]['message']['content'];
       await storeTopicList(llmContent);
+      console.log('stored topic list:', llmContent);  
       
       // Show success indication
       topicInput.style.borderColor = "green";

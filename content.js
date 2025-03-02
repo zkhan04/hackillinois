@@ -1,6 +1,6 @@
 const BASE_URL = 'http://127.0.0.1:1234/';
 const LLM_MODEL = 'llama-3.2-3b-instruct';
-const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response."
+const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - !! Especially be aware if the user is procastinating and accessing social media platform (instagram, tiktok, snapchat, facebook, x, twitter, etc) return false, score = 0 - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.6-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.3]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response."
 
 
 /**
@@ -28,11 +28,11 @@ const getPageText = () => {
 
     // Fallback: Try common selectors if Readability fails or content is too short
     if (!content || content.length < 100) {
-        const selectors = ["#content", "article", "main", "body"];
+        const selectors = ["#content", "article", "main", "body", "search"];
         for (let selector of selectors) {
             const elem = document.querySelector(selector);
             if (elem && elem.innerText && elem.innerText.length > 100) {
-                content = elem.innerText;
+                content += elem.innerText;
                 console.log(`Using selector "${selector}". Content size: ${content.length}`);
                 break;
             }
@@ -83,7 +83,7 @@ const getPageText = () => {
         console.log("Content too long, truncating to 20000 characters");
         content = content.slice(0, 20000);
     }
-
+    // console.log(content)
     return content;
 };
 
@@ -98,6 +98,7 @@ const getLLMOpinion = async (page_content) => {
 
 	// Construct the prompt using pageContent and topic.
     console.log("Topic Query: " + topic);
+    // console.log("Related Topics: " + ref_context);
     const body = JSON.stringify({
         messages: [
             { "role": "system", "content": CUSTOM_INSTRUCTION},
@@ -129,6 +130,7 @@ const getLLMOpinion = async (page_content) => {
         max_tokens: -1,
         temperature: 0.2
     })
+    // console.log(body)
     
     // attempt to call a locally hosted LLM.
 	try {
@@ -150,11 +152,11 @@ const getStoredData = async () => {
         const result = await chrome.storage.local.get(["topic", "topicList"]);
         return {
             topic: result.topic || null,
-            topicList: result.topicList || null
+            ref_context: result.topicList || null  // Map topicList to ref_context
         };
     } catch (err) {
         console.error("Failed to retrieve stored data", err);
-        return { topic: null, topicList: null };
+        return { topic: null, ref_context: null };
     }
 };
 
@@ -333,7 +335,8 @@ document.head.appendChild(styleSheet);
         try {
             const llmResult = JSON.parse(responseContent);
             // Record the relevancy score for stats (score is 0 if not relevant)
-            const score = llmResult.bool_relevant ? Math.max(0.1, llmResult.relevant) : 0;
+            // const score = llmResult.bool_relevant ? Math.min(1, llmResult.relevant) : 0;
+            const score = llmResult.relevant;
             console.log(`Relevancy score: ${score}, bool_relevant: ${llmResult.bool_relevant}`);
             
             chrome.runtime.sendMessage({ action: "recordScore", score });
