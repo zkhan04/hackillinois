@@ -7,12 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   activateTopicSubmission();
 });
 
-chrome.windows.create({
-  url: chrome.runtime.getURL("notification.html"),
-  type: "popup",
-  width: 300,
-  height: 200,
-});
 
 /**
  * Generates a structured list of 20+ relevant topics based on a given user topic.
