@@ -1,4 +1,5 @@
 let timerInterval = null;
+let notificationWindowId = null;
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ timerEnd: null, timerRunning: false });
@@ -90,14 +91,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     chrome.windows.create({
         url: chrome.runtime.getURL("notification.html"),
         type: "popup",
-        width: 200,
-        height: 200,
+        width: 350,
+        height: 250,
+    }, (window) => {
+        // Store the window ID so we can close it later if needed
+        notificationWindowId = window.id;
+        sendResponse({status: "notification shown", windowId: window.id});
     });
-    sendResponse({status: "notification shown"});
+    return true; // Required for async sendResponse
+  } else if (request.action === "closeNotification") {
+    // If we have a stored window ID, close it
+    if (notificationWindowId) {
+      chrome.windows.remove(notificationWindowId, () => {
+        notificationWindowId = null;
+        sendResponse({status: "notification closed"});
+      });
+    }
+    return true; // Required for async sendResponse
   }
 });
 
-// Update the session start handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request === "session_start") {
     console.log("New session starting, initializing stats");

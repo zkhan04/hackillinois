@@ -159,10 +159,149 @@ const getStoredData = async () => {
 };
 
 async function showNotification() {
-    chrome.runtime.sendMessage({ action: "showNotification" });
+    // Get focus level from storage
+    const result = await chrome.storage.sync.get(["focusLevel"]);
+    const focusLevel = result.focusLevel || 'easy';
     
+    if (focusLevel === 'hard') {
+        // Hard mode: Use popup window notification (more intrusive)
+        chrome.runtime.sendMessage({ action: "showNotification" });
+    } else {
+        // Easy mode: Use in-page notification
+        showInPageNotification();
+    }
 }
-  
+
+function showInPageNotification() {
+    console.log("Showing in-page notification");
+    
+    // Create the notification element
+    const notification = document.createElement('div');
+    notification.id = 'focus-mode-notification';
+    notification.innerHTML = `
+        <div class="focus-notification-content">
+            <div class="focus-notification-icon">⚠️</div>
+            <div class="focus-notification-text">
+                <h3>Attention!</h3>
+                <p>This page seems off-topic. Stay focused!</p>
+            </div>
+            <button class="focus-notification-close">✕</button>
+        </div>
+    `;
+    
+    // Add styles
+    const style = document.createElement('style');
+    style.textContent = `
+        #focus-mode-notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, #ff8a65, #ff7043);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 99999;
+            width: 300px;
+            padding: 0;
+            animation: slide-up 0.4s ease-out forwards;
+            overflow: hidden;
+        }
+        
+        .focus-notification-content {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+        }
+        
+        .focus-notification-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+        
+        .focus-notification-text {
+            flex-grow: 1;
+            text-align: left;
+        }
+        
+        .focus-notification-text h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .focus-notification-text p {
+            margin: 5px 0 0;
+            font-size: 14px;
+        }
+        
+        .focus-notification-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 10px;
+            opacity: 0.8;
+        }
+        
+        .focus-notification-close:hover {
+            opacity: 1;
+        }
+        
+        @keyframes slide-up {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+    `;
+    
+    document.head.appendChild(style);
+    document.body.appendChild(notification);
+    
+    // Add close button functionality
+    const closeButton = notification.querySelector('.focus-notification-close');
+    closeButton.addEventListener('click', () => {
+        notification.style.animation = 'slide-down 0.3s forwards';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    });
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            notification.style.animation = 'slide-down 0.3s forwards';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }
+    }, 10000);
+}
+
+// Add the slide-down animation
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+@keyframes slide-down {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, 20px);
+    }
+}
+`;
+document.head.appendChild(styleSheet);
 
 (async function () {
     // Get focus mode status correctly

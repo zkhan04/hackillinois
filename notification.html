@@ -3,11 +3,75 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>notification popup</title>
+  <title>Focus Alert</title>
   <link rel="stylesheet" href="notification.css">
 </head>
-<h1>Lock in time!</h1>
 <body>
-    <p>Looks like you're off task. It's time to lock in!</p>
+  <div class="particles">
+    <!-- Particles will be created with JavaScript -->
+  </div>
+  
+  <div class="notification-icon">⚠️</div>
+  <h1>Lock In Time!</h1>
+  <p>Looks like you're off task. It's time to lock in and focus on what matters!</p>
+  
+  <button id="backToWorkBtn">Back to Work</button>
+  
+  <script>
+    // Create animated particles
+    function createParticles() {
+      const particlesContainer = document.querySelector('.particles');
+      const particleCount = 15;
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        
+        // Random size between 5px and 15px
+        const size = Math.random() * 10 + 5;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        
+        // Random position
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        
+        // Random animation duration
+        const duration = Math.random() * 10 + 5;
+        particle.style.animationDuration = `${duration}s`;
+        
+        // Random delay
+        const delay = Math.random() * 5;
+        particle.style.animationDelay = `${delay}s`;
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+    
+    // Initialize particles
+    createParticles();
+    
+    // Close button functionality - properly close the notification window/tab
+    document.getElementById('backToWorkBtn').addEventListener('click', () => {
+      // First try to close the tab
+      try {
+        // For popup windows in Chrome extensions
+        window.close();
+      } catch (e) {
+        console.error("Could not close window with window.close():", e);
+        // Alternative approach for tab contexts
+        try {
+          chrome.runtime.sendMessage({ action: "closeNotification" });
+        } catch (err) {
+          console.error("Could not send close message:", err);
+        }
+      }
+    });
+
+    // Auto-close after 15 seconds to avoid distracting the user too long
+    setTimeout(() => {
+      window.close();
+    }, 15000);
+  </script>
 </body>
 </html>
