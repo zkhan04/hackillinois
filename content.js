@@ -166,7 +166,7 @@ async function showNotification() {
 
 (async function () {
     const lockinMode = await chrome.storage.sync.get("focusModeEnabled");
-    if (!lockInMode.focusModeEnabled) {
+    if (!lockinMode.focusModeEnabled) {
       return;
     } 
   
