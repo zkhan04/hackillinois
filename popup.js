@@ -7,6 +7,11 @@ document.addEventListener("DOMContentLoaded", () => {
   activateTopicSubmission();
   activateEndSessionButton(); // Ensure the "End Session" button is hooked up
 
+  loadState();
+  addMessageListeners();
+});
+
+function loadState() {
   // Check for final stats on popup load
   chrome.storage.local.get("finalStats", (data) => {
     if (data.finalStats) {
@@ -21,11 +26,14 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("intopic").value = data.topic;
     }
   });
+}
 
+function addMessageListeners(){
   // Listen for all messages with debug logs
   chrome.runtime.onMessage.addListener((message) => {
     console.log("Popup received message:", message);
     
+
     if (message.action === "sessionEnded") {
       if (message.stats) {
         console.log("Received stats directly in message:", message.stats);
@@ -61,59 +69,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   });
-
-  const pauseButton = document.getElementById('pauseTimer');
-  const resumeButton = document.getElementById('resumeTimer');
-  const startButton = document.getElementById('startTimer');
-
-  // Initially disable the pause button
-  pauseButton.disabled = true;
-
-  startButton.addEventListener('click', () => {
-      pauseButton.disabled = false;
-      resumeButton.disabled = true;
-  });
-
-  pauseButton.addEventListener('click', () => {
-      pauseButton.disabled = true;
-      resumeButton.disabled = false;
-  });
-
-  resumeButton.addEventListener('click', () => {
-      pauseButton.disabled = false;
-      resumeButton.disabled = true;
-  });
-});
-
-function updateStatsUI(finalStats) {
-  const statsContainer = document.getElementById("statsContainer");
-  if (statsContainer) {
-    if (finalStats.isEasterEgg) {
-      // Easter egg display for when no sites were visited
-      statsContainer.innerHTML = `
-        <h3>Session Summary</h3>
-        <div class="easter-egg">
-          <p style="font-size: 24px;">👻</p>
-          <p>${finalStats.message}</p>
-        </div>
-      `;
-      statsContainer.style.animation = "ghost-float 3s infinite ease-in-out";
-    } else {
-      // Normal stats display
-      statsContainer.innerHTML = `
-        <h3>Session Summary</h3>
-        <p>Evaluated websites: ${finalStats.count}</p>
-        <p>Average Focus Score: ${(finalStats.averageScore * 100).toFixed(1)}%</p>
-        <p>${finalStats.message}</p>
-      `;
-      // Trigger simple confetti simulation if score is high
-      if (finalStats.averageScore >= 0.7) {
-        statsContainer.style.animation = "confetti 2s ease-out";
-        setTimeout(() => statsContainer.style.animation = "", 2000);
-      }
-    }
-  }
 }
+
+// LLM Interaction
 
 /**
  * Generates a structured list of 20+ relevant topics based on a given user topic.
@@ -189,6 +147,9 @@ const storeTopicList = async (response) => {
 	}
 };
 
+
+// ------------ FRONTEND STUFF ---------------
+
 const activateTopicSubmission = () => {
   const topicInput = document.getElementById("intopic");
   const topicButton = document.getElementById("submitTopic");
@@ -253,6 +214,7 @@ const activateTimer = () => {
   const timerDisplay = document.getElementById("timerDisplay");
 
   let timerRunning = false;
+  pauseButton.disabled = true;
 
   // Notify background script that popup is open
   chrome.runtime.sendMessage("popup_opened");
@@ -419,6 +381,36 @@ const activateToggleButton = () => {
   // Update the button text based on the current state
   function updateButtonText(isEnabled) {
     toggleButton.textContent = isEnabled ? 'Disable Focus Mode' : 'Enable Focus Mode';
+  }
+}
+
+function updateStatsUI(finalStats) {
+  const statsContainer = document.getElementById("statsContainer");
+  if (statsContainer) {
+    if (finalStats.isEasterEgg) {
+      // Easter egg display for when no sites were visited
+      statsContainer.innerHTML = `
+        <h3>Session Summary</h3>
+        <div class="easter-egg">
+          <p style="font-size: 24px;">👻</p>
+          <p>${finalStats.message}</p>
+        </div>
+      `;
+      statsContainer.style.animation = "ghost-float 3s infinite ease-in-out";
+    } else {
+      // Normal stats display
+      statsContainer.innerHTML = `
+        <h3>Session Summary</h3>
+        <p>Evaluated websites: ${finalStats.count}</p>
+        <p>Average Focus Score: ${(finalStats.averageScore * 100).toFixed(1)}%</p>
+        <p>${finalStats.message}</p>
+      `;
+      // Trigger simple confetti simulation if score is high
+      if (finalStats.averageScore >= 0.7) {
+        statsContainer.style.animation = "confetti 2s ease-out";
+        setTimeout(() => statsContainer.style.animation = "", 2000);
+      }
+    }
   }
 }
 
