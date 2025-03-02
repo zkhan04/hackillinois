@@ -94,10 +94,6 @@ const activateTopicSubmission = () => {
     const instruction = "Your task is to generate a structured list of 20+ relevant topics based on a given user topic. The goal is to create a broader context to help determine whether a webpage is relevant to the user's interest. | Output Format: topic: string (Original user topic), description: string (Brief summary of the topic), list_of_topics: array (20+ relevant subtopics, each containing a short keyword-based description with exactly 5 keywords). | Guidelines: - Expand the given topic by identifying closely related subtopics, concepts, or terminologies. - Include synonyms, industry-specific jargon, and alternative ways the topic may be discussed. - If applicable, provide different perspectives (e.g., academic, technical, casual, industry use cases). - Prioritize topics that are likely to appear on webpages that genuinely cover the subject. - Do not generate overly broad or generic topics—keep them directly relevant. - Ensure that each subtopic in list_of_topics has an accompanying 5-keyword description that concisely represents its core concept. - Do not generate explanations, summaries, or commentary beyond the specified format.";
     const response = await generateTopicList(topic, instruction);
 
-     let input1 = document.getElementById("intopic");
-    console.log("in reset");
-    input1.value = "";
-
     const llmContent = response['choices'][0]['message']['content'];
     await storeTopicList(llmContent);
 
@@ -118,10 +114,6 @@ const activateTimer = () => {
 
   // Notify background script that popup is open
   chrome.runtime.sendMessage("popup_opened");
-
-  function hideStart() {
-    document.getElementById("timerStart").style.display = "none";
-}
   
   // Restore button states when popup opens
   chrome.storage.local.get(["timerEnd", "timerRunning"], (data) => {
