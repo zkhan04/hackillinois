@@ -7,7 +7,7 @@ See more about our project on Devpost: https://devpost.com/software/focus-ldoypu
 
 ### Downloading an LLM
 
-* Install [LM Studio](https://lmstudio.ai/) for your appropriate device.
+* Install [LM Studio](https://lmstudio.ai/).
 * Open LM Studio and click the purple search icon on the left to open the model search menu.
 * Download the LLM of your choice. During development, we found that `Llama-3.2-3B-Instruct-Q8_0-GGUF` worked very well.
 
