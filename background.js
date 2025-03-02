@@ -15,7 +15,11 @@ function startBackgroundTimer() {
 }
 
 function calculateFinalStats(stats) {
-  if (!stats || stats.count === 0) {
+  // Initialize stats object if it doesn't exist
+  const safeStats = stats || { totalScore: 0, count: 0 };
+  
+  // Only show easter egg if literally no websites were visited
+  if (safeStats.count === 0) {
     return {
       averageScore: 0,
       count: 0,
@@ -24,14 +28,14 @@ function calculateFinalStats(stats) {
     };
   }
   
-  const average = stats.totalScore / stats.count;
+  const average = safeStats.totalScore / safeStats.count;
   const message = average >= 0.7 
     ? "Congrats! You stayed focused! 🎉" 
     : "Keep trying! You can do better next time!";
     
   return {
     averageScore: average,
-    count: stats.count,
+    count: safeStats.count,
     message: message,
     isEasterEgg: false
   };
