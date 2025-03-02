@@ -2,6 +2,7 @@ const BASE_URL = 'http://127.0.0.1:1234/';
 const LLM_MODEL = 'llama-3.2-3b-instruct';
 const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response."
 
+
 /**
  * Get the text content of the page, truncating to 20000 characters if necessary
  * @returns {string} The page content
@@ -125,7 +126,16 @@ const getStoredTopicList = async () => {
             // get
             const allText = getPageText();
             const opinion = await getLLMOpinion(allText);
-            console.log(opinion['choices'][0]['message']['content']);
+            const responseContent = opinion['choices'][0]['message']['content'];
+            console.log(responseContent);
+            try {
+                const llmResult = JSON.parse(responseContent);
+                if (!llmResult.bool_relevant) {
+                    showNotification();
+                }
+            } catch (error) {
+                console.error("Failed to parse LLM response:", error);
+            }
 
         })();
     } else {
@@ -151,6 +161,7 @@ Other concerns:
 * Do we want the extension to notify the user as soon as they go off-track, or set a small timeout (1-3 min?)
 * What happens to these timeouts when the user switches tabs?
 * If the user spends more than a certain amount of time (10-15 min) off-track, do we disable focus mode?
-* Can we overwhelm the LLM by continuously opening tabs? Maybe, we 
+* Can we overwhelm the LLM by continuously opening tabs?  
 
 */
+

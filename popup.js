@@ -1,5 +1,5 @@
-BASE_URL = 'http://127.0.0.1:1234/';
-LLM_MODEL = 'llama-3.2-3b-instruct';
+const BASE_URL = 'http://127.0.0.1:1234/';
+const LLM_MODEL = 'llama-3.2-3b-instruct';
 
 document.addEventListener("DOMContentLoaded", () => {
   activateTimer();
@@ -107,6 +107,10 @@ const activateTimer = () => {
 
   // Notify background script that popup is open
   chrome.runtime.sendMessage("popup_opened");
+
+  function hideStart() {
+    document.getElementById("timerStart").style.display = "none";
+}
   
   // Restore button states when popup opens
   chrome.storage.local.get(["timerEnd", "timerRunning"], (data) => {
@@ -128,6 +132,12 @@ const activateTimer = () => {
       const time = parseInt(timeInput.value);
       if (isNaN(time) || time <= 0) return;
 
+      timerEnd = Date.now() + time * 60000;
+      chrome.storage.local.set({ timerEnd, timerPaused: null });
+
+      timerRunning = true;
+      if (isNaN(time) || time <= 0) return;
+
       const timerEnd = Date.now() + time * 60000;
       chrome.storage.local.set({ timerEnd, timerPaused: null });
 
@@ -136,6 +146,42 @@ const activateTimer = () => {
       startButton.disabled = true;
       pauseButton.disabled = false;
       resumeButton.disabled = true;
+  });
+
+  pauseButton.addEventListener("click", () => {
+      if (timerRunning) {
+          chrome.storage.local.get("timerEnd", (data) => {
+              if (!data.timerEnd) return;
+
+              const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null });
+
+              chrome.runtime.sendMessage("pause_timer");
+          });
+
+          timerRunning = false;
+          startButton.disabled = false;
+          pauseButton.disabled = true;
+          resumeButton.disabled = false;
+      }
+  });
+
+  resumeButton.addEventListener("click", () => {
+      if (!timerRunning) {
+          chrome.storage.local.get("timerPaused", (data) => {
+              if (!data.timerPaused) return;
+
+              const newEndTime = Date.now() + data.timerPaused;
+              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null });
+
+              chrome.runtime.sendMessage("resume_timer");
+              updateTimerDisplay();
+          });
+
+          timerRunning = true;
+          pauseButton.disabled = false;
+          resumeButton.disabled = true;
+      }
   });
 
   pauseButton.addEventListener("click", () => {
@@ -187,7 +233,20 @@ const activateTimer = () => {
 
           // Keep updating every second while popup is open
           setTimeout(updateTimerDisplay, 1000);
+      chrome.storage.local.get(["timerEnd"], (data) => {
+          if (!data.timerEnd) return;
+
+          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
+          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
+          const minutesLeft = Math.floor(timeLeftSeconds / 60);
+          const secondsLeft = timeLeftSeconds % 60;
+
+          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
+
+          // Keep updating every second while popup is open
+          setTimeout(updateTimerDisplay, 1000);
       });
+  });
   }
 
   updateTimerDisplay();
