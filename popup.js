@@ -15,6 +15,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Retain topic input value if previously set
+  chrome.storage.local.get("topic", (data) => {
+    if (data.topic) {
+      document.getElementById("intopic").value = data.topic;
+    }
+  });
+
   // Listen for all messages with debug logs
   chrome.runtime.onMessage.addListener((message) => {
     console.log("Popup received message:", message);
@@ -268,7 +275,7 @@ const activateTimer = () => {
       const time = parseInt(timeInput.value);
       if (isNaN(time) || time <= 0) return;
       const timerEnd = Date.now() + time * 60000;
-      chrome.storage.local.set({ timerEnd, timerPaused: null });
+      chrome.storage.local.set({ timerEnd, timerPaused: null, timerRunning: true });
 
       timerRunning = true;
       updateTimerDisplay();
@@ -283,7 +290,7 @@ const activateTimer = () => {
               if (!data.timerEnd) return;
 
               const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null });
+              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null, timerRunning: false });
 
               chrome.runtime.sendMessage("pause_timer");
           });
@@ -301,7 +308,7 @@ const activateTimer = () => {
               if (!data.timerPaused) return;
 
               const newEndTime = Date.now() + data.timerPaused;
-              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null });
+              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null, timerRunning: true });
 
               chrome.runtime.sendMessage("resume_timer");
               updateTimerDisplay();
