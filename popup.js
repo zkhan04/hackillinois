@@ -264,7 +264,6 @@ const activateTimer = () => {
       updateTimerDisplay();
   });
 
-
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
       if (isNaN(time) || time <= 0) return;
@@ -314,45 +313,13 @@ const activateTimer = () => {
       }
   });
 
-  pauseButton.addEventListener("click", () => {
-      if (timerRunning) {
-          chrome.storage.local.get("timerEnd", (data) => {
-              if (!data.timerEnd) return;
-
-              const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-              chrome.storage.local.set({ timerPaused: timeLeftMilliseconds, timerEnd: null });
-
-              chrome.runtime.sendMessage("pause_timer");
-          });
-
-          timerRunning = false;
-          startButton.disabled = false;
-          pauseButton.disabled = true;
-          resumeButton.disabled = false;
-      }
-  });
-
-  resumeButton.addEventListener("click", () => {
-      if (!timerRunning) {
-          chrome.storage.local.get("timerPaused", (data) => {
-              if (!data.timerPaused) return;
-
-              const newEndTime = Date.now() + data.timerPaused;
-              chrome.storage.local.set({ timerEnd: newEndTime, timerPaused: null });
-
-              chrome.runtime.sendMessage("resume_timer");
-              updateTimerDisplay();
-          });
-
-          timerRunning = true;
-          pauseButton.disabled = false;
-          resumeButton.disabled = true;
-      }
-  });
-
+  // Remove duplicate event listeners
   function updateTimerDisplay() {
       chrome.storage.local.get(["timerEnd"], (data) => {
-          if (!data.timerEnd) return;
+          if (!data.timerEnd) {
+              timerDisplay.textContent = "Time Left: --";
+              return;
+          }
 
           const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
           const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
@@ -362,10 +329,16 @@ const activateTimer = () => {
           timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
 
           // Keep updating every second while popup is open
-          setTimeout(updateTimerDisplay, 1000);
+          if (timeLeftMilliseconds > 0) {
+              setTimeout(updateTimerDisplay, 1000);
+          } else {
+              timerDisplay.textContent = "Time's up!";
+              startButton.disabled = false;
+              pauseButton.disabled = true;
+              resumeButton.disabled = true;
+              timerRunning = false;
+          }
       });
-
-  });
   }
 
   updateTimerDisplay();
@@ -375,6 +348,7 @@ const activateToggleButton = () => {
   // Get the toggle button and level selector
   const toggleButton = document.getElementById('toggle-btn');
   const levelSelector = document.getElementById('level');
+  const tooltipContainer = document.getElementById('levelTooltipContainer');
 
   // Load the current state from Chrome storage
   chrome.storage.sync.get(['focusModeEnabled', 'focusLevel'], function (result) {
@@ -391,6 +365,9 @@ const activateToggleButton = () => {
     
     // Toggle level selector disabled state based on focus mode
     levelSelector.disabled = isEnabled;
+    
+    // Only show tooltip when the mode is actually disabled
+    tooltipContainer.classList.toggle('has-tooltip', isEnabled);
     
     updateButtonText(isEnabled);
   });
@@ -409,6 +386,8 @@ const activateToggleButton = () => {
         chrome.storage.sync.set({ focusLevel: selectedLevel });
         // Disable the level selector during active session
         levelSelector.disabled = true;
+        // Show tooltip for disabled selector
+        tooltipContainer.classList.add('has-tooltip');
         // Clear any previous session stats display
         const statsContainer = document.getElementById("statsContainer");
         if (statsContainer) statsContainer.innerHTML = '';
@@ -417,6 +396,8 @@ const activateToggleButton = () => {
         chrome.runtime.sendMessage("end_session");
         // Re-enable the level selector when session ends
         levelSelector.disabled = false;
+        // Hide tooltip when selector is enabled
+        tooltipContainer.classList.remove('has-tooltip');
       }
 
       // Save the new state to Chrome storage

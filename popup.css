@@ -244,12 +244,23 @@ button:disabled {
     box-shadow: 1px 1px rgb(120, 150, 147);
     cursor: not-allowed;
     transform: none;
+    opacity: 0.7;
 }
 
-button:disabled:before,
 button:disabled:hover {
-    animation: none;
+    background-color: rgb(156, 191, 184);
+    color: rgb(220, 240, 235);
+    box-shadow: 1px 1px rgb(120, 150, 147);
     transform: none;
+}
+
+button:disabled:before {
+    display: none;
+}
+
+button:disabled:active {
+    transform: none;
+    box-shadow: 1px 1px rgb(120, 150, 147);
 }
 
 #submitTopic:hover {
@@ -305,6 +316,7 @@ input:focus, select:focus {
     display: inline-block;
 }
 
+/* Only show tooltip when has-tooltip class is present */
 .tooltip .tooltiptext {
     visibility: hidden;
     width: 180px;
@@ -321,9 +333,10 @@ input:focus, select:focus {
     opacity: 0;
     transition: opacity 0.3s;
     font-size: 12px;
+    pointer-events: none; /* Prevents tooltip from blocking mouse events */
 }
 
-.tooltip:hover .tooltiptext {
+.tooltip.has-tooltip:hover .tooltiptext {
     visibility: visible;
     opacity: 1;
 }
