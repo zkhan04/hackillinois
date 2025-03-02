@@ -87,3 +87,22 @@ select {
     box-shadow: 3px 3px rgb(0, 115, 105);
     padding: 5px 10px;
 }
+
+@keyframes confetti {
+  0% { background-color: #fff; }
+  50% { background-color: #ff0; }
+  100% { background-color: #fff; }
+}
+
+@keyframes ghost-float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.easter-egg {
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  text-align: center;
+}
