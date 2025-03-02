@@ -2,23 +2,114 @@ const BASE_URL = 'http://127.0.0.1:1234/';
 const LLM_MODEL = 'llama-3.2-3b-instruct';
 const CUSTOM_INSTRUCTION = "Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response."
 
-
 /**
- * Get the text content of the page, truncating to 20000 characters if necessary
- * @returns {string} The page content
+ * Extracts the main content of a webpage, handling static and dynamic sites.
+ * Uses Readability.js if available, falls back to semantic HTML elements, common IDs/classes,
+ * or the largest text-heavy block. Also extracts search queries when applicable.
+ * @returns {string} Extracted text content.
  */
 const getPageText = () => {
-    const content = document.querySelector("#content") || document.querySelector("main") || document.body;
+    let content = "";
 
-    console.log(`Content size: ${content.innerText.length}`);
-
-    if (content.innerText.length > 20000) {
-        console.log("Content too long, truncating to 20000 characters");
-        return content.innerText.slice(0, 20000);
+    /** 1. Use Mozilla's Readability.js if available */
+    try {
+        if (typeof Readability !== "undefined") {
+            const docClone = document.cloneNode(true); // Clone document to avoid modifications
+            const reader = new Readability(docClone);
+            const article = reader.parse();
+            if (article && article.textContent && article.textContent.length > 100) {
+                content = article.textContent.trim();
+                console.log(`Using Readability extraction. Content size: ${content.length}`);
+            }
+        }
+    } catch (e) {
+        console.error("Error using Readability:", e);
     }
 
-    return content.innerText;
-}
+    /** 2. Fallback: Try extracting from semantic elements (<main>, <article>) */
+    if (!content || content.length < 100) {
+        let elem = document.querySelector("main, article");
+        if (elem && elem.innerText.trim().length > 100) {
+            content = elem.innerText.trim();
+            console.log("Extracted from <main> or <article>");
+        }
+    }
+
+    /** 3. Check common ID/class names */
+    if (!content || content.length < 100) {
+        let elem = document.querySelector("#content, .content, #main, .main-content, #post, .post-content");
+        if (elem && elem.innerText.trim().length > 100) {
+            content = elem.innerText.trim();
+            console.log("Extracted from common ID/class names");
+        }
+    }
+
+    /** 4. Find the largest text-heavy block if no structured content is found */
+    if (!content || content.length < 100) {
+        const getLargestTextBlock = () => {
+            let elements = [...document.querySelectorAll("div, section, article")];
+            let largest = elements.reduce((prev, curr) =>
+                curr.innerText.length > prev.innerText.length ? curr : prev, { innerText: "" }
+            );
+            return largest.innerText.trim();
+        };
+        
+        content = getLargestTextBlock();
+        if (content.length > 100) {
+            console.log("Extracted from largest text block");
+        }
+    }
+
+    /** 5. Fallback: Extract from <body> if everything else fails */
+    if (!content || content.length < 100) {
+        content = document.body.innerText.trim();
+        console.log("Extracted from document body");
+    }
+
+    /** 6. Extract search queries if the page is a search engine */
+    let searchQuery = "";
+    const url = window.location.href;
+
+    if (url.includes("youtube.com")) {
+        let ytSearch = document.querySelector('input#search');
+        if (ytSearch && ytSearch.value) {
+            searchQuery = `Search Query: ${ytSearch.value}`;
+            console.log(`Extracted YouTube search query: ${ytSearch.value}`);
+        }
+    } else if (url.includes("google.com/search")) {
+        let googleSearch = document.querySelector('input[name="q"]');
+        if (googleSearch && googleSearch.value) {
+            searchQuery = `Search Query: ${googleSearch.value}`;
+            console.log(`Extracted Google search query: ${googleSearch.value}`);
+        }
+    } else if (url.includes("bing.com/search")) {
+        let bingSearch = document.querySelector('input[name="q"]');
+        if (bingSearch && bingSearch.value) {
+            searchQuery = `Search Query: ${bingSearch.value}`;
+            console.log(`Extracted Bing search query: ${bingSearch.value}`);
+        }
+    } else if (url.includes("duckduckgo.com/")) {
+        let ddgSearch = document.querySelector('input[name="q"]');
+        if (ddgSearch && ddgSearch.value) {
+            searchQuery = `Search Query: ${ddgSearch.value}`;
+            console.log(`Extracted DuckDuckGo search query: ${ddgSearch.value}`);
+        }
+    }
+
+    // Prepend search query to extracted content if available
+    if (searchQuery) {
+        content = `${searchQuery}\n\n${content}`;
+    }
+
+    /** 7. Truncate content if it exceeds 20,000 characters */
+    if (content.length > 20000) {
+        console.log("Content too long, truncating to 20,000 characters");
+        content = content.slice(0, 20000);
+    }
+
+    return content;
+};
+
 
 /**
  * Asks the LLM whether the current webpage is relevant to the current topic
