@@ -12,7 +12,31 @@ h1 {
     /* font-style: oblique; */
 }
 
-#startTimer {
+
+#intopic {
+    background-color: rgb(255, 255, 255);
+    color: rgb(0, 115, 105);
+    border:none;
+    border-radius: 10px;
+    box-shadow: 2px 2px rgb(0, 115, 105);
+    padding: 5px 10px;
+    font-size: medium;
+    height: 17.5px;
+    width: 100px;
+}
+
+#submitTopic {
+    font-weight: bold;
+    background-color: rgb(22, 183, 148);
+    color: rgb(183, 255, 229);
+    border: none;
+    border-radius: 20px;
+    box-shadow: 3px 3px rgb(0, 115, 105);
+    padding: 10px 20px;
+    width: fit-content;
+}
+
+#startTimer, #pauseTimer, #resumeTimer {
     font-weight: bold;
     background-color: rgb(22, 183, 148);
     color: rgb(183, 255, 229);
