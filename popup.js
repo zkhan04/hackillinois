@@ -1,7 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
   activateTimer();
   activateToggleButton();
+  activateTopicSubmission();
 });
+
+const activateTopicSubmission = () => {
+  const topicInput = document.getElementById("intopic");
+  const topicButton = document.getElementById("submitTopic");
+
+  topicButton.addEventListener("click", () => {
+      chrome.storage.local.set({ topic: topicInput.value});
+  });
+}
 
 const activateTimer = () => {
   const timeInput = document.getElementById("timeInput");
@@ -29,6 +39,7 @@ const activateTimer = () => {
       }
       updateTimerDisplay();
   });
+
 
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
