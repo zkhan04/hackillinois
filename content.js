@@ -28,9 +28,7 @@ const getLLMOpinion = async (page_content, custom_instruction) => {
     const ref_context = await getStoredTopicList();
     const body = JSON.stringify({
         messages: [
-            // { "role": "system", "content": "Do not add any human-like explanations, just provide the structured data output."},
             { "role": "system", "content": custom_instruction},
-            // { "role": "user", "content": `Goal: ${}`}
             { "role": "user", "content": `Related Topics: ${ref_context}`},
             { "role": "user", "content": `Current Web Content: ${page_content}`},
         ],
@@ -130,14 +128,21 @@ const getStoredTopicList = async () => {
         (async function () {
             // get
             const allText = getPageText();
-            const instruction = `Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response.`
+            const instruction = `Your task is to determine whether a webpage is relevant to the user's topic of interest. You will be provided with: 1. A structured list of related topics derived from the user's original query. 2. The extracted text content of a webpage. Use this information to assess whether the webpage meaningfully discusses the user's topic. | Output: bool_relevant : boolean, relevant : float(0-1, steps: 0.1) | Guidelines: - Strictly analyze whether the webpage explicitly covers any of the related topics. - Prioritize content that provides substantial information, not just a passing mention. - If the webpage is highly relevant, output bool_relevant = true, relevant = [0.8-1.0]. - If the webpage is partially relevant, output bool_relevant = true, relevant = [0.5-0.8]. - If the webpage is not relevant, output bool_relevant = false, relevant = [0.0-0.5]. - Do not generate explanations, summaries, or additional commentary. Output only the required structured response.`;
             const opinion = await getLLMOpinion(allText, instruction);
-            console.log(opinion['choices'][0]['message']['content']);
+            const responseContent = opinion['choices'][0]['message']['content'];
+            console.log(responseContent);
+            try {
+                const llmResult = JSON.parse(responseContent);
+                if (!llmResult.bool_relevant) {
+                    showNotification();
+                }
+            } catch (error) {
+                console.error("Failed to parse LLM response:", error);
+            }
 
         })();
     } else {
 		console.log("not locked in");
 	}
 })();
-
-

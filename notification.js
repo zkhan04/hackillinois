@@ -1,4 +1,3 @@
-
 const _opt = {
     type: "basic",
     title: "Lock in time!",
@@ -12,7 +11,7 @@ function requestPermission() {
   Notification.requestPermission()
     .then((permission) => {
       console.log('Promise resolved: ' + permission);
-      showPermission();
+      // Removed call to showPermission() since it's not defined.
     })
     .catch((error) => {
       console.log('Promise was rejected');
@@ -21,12 +20,17 @@ function requestPermission() {
 }
 
 async function showNotification() {
+    console.log('Notification permission: ' + Notification.permission);
     if (Notification.permission === "granted") {
-        await chrome.notifications.create(_id, _opt);
+        chrome.runtime.sendMessage({ action: "showNotification" }, (response) => {
+            console.log(response.status);
+        });
     } else if (Notification.permission === "default") {
         requestPermission();
         if (Notification.permission === "granted") {
-            await chrome.notifications.create(_id, _opt);
+            chrome.runtime.sendMessage({ action: "showNotification" }, (response) => {
+                console.log(response.status);
+            });
         }
     }
 }
