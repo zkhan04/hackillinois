@@ -7,6 +7,16 @@ document.addEventListener("DOMContentLoaded", () => {
   activateTopicSubmission();
 });
 
+/**
+ * Generates a structured list of 20+ relevant topics based on a given user topic.
+ *
+ * The goal is to create a broader context to help determine whether a webpage is relevant to the user's interest.
+ *
+ * Output Format: topic: string (Original user topic), description: string (Brief summary of the topic), list_of_topics: array (20+ relevant subtopics, each containing a short keyword-based description with exactly 5 keywords).
+ * @param {string} topic - User-provided topic to generate relevant subtopics for.
+ * @param {string} custom_instruction - Custom instruction string to pass to the LLM model.
+ * @returns {Promise<object>} - A Promise of the generated topic list. The resolved object should have the following keys: topic (string), description (string), list_of_topics (array of objects). Each subtopic object should have the following keys: topic (string), description (string). If the promise is rejected, the error should be logged to the console.
+ */
 const generateTopicList = async (topic, custom_instruction) => {
 	// Construct the prompt using pageContent and topic.
 	const user_prompt = `topic: ${topic}`;
