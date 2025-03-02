@@ -158,6 +158,12 @@ const getStoredData = async () => {
     }
 };
 
+async function showNotification() {
+    chrome.runtime.sendMessage({ action: "showNotification" });
+    
+}
+  
+
 (async function () {
     const lockinMode = await chrome.storage.sync.get("focusModeEnabled");
     if (!lockInMode.focusModeEnabled) {

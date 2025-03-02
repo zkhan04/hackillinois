@@ -83,14 +83,12 @@ chrome.runtime.onMessage.addListener((message) => {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "showNotification") {
-    const _opt = {
-      type: "basic",
-      title: "Lock in time!",
-      message: `Looks like you're off task. It's time to lock in!`,
-      iconUrl: "icon.png"
-    };
-    const _id = "lock-in-notification";
-    chrome.notifications.create(_id, _opt);
+    chrome.windows.create({
+        url: chrome.runtime.getURL("notification.html"),
+        type: "popup",
+        width: 200,
+        height: 200,
+    });
     sendResponse({status: "notification shown"});
   }
 });
