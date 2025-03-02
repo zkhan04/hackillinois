@@ -1,7 +1,7 @@
 # lock-in
 A Chrome extension that detects when developers go off-track and nudge them to focus.
 
-Devpost: https://devpost.com/software/focus-ldoypu 
+See more about our project on Devpost: https://devpost.com/software/focus-ldoypu 
 
 ## Setup
 
