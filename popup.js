@@ -7,6 +7,15 @@ document.addEventListener("DOMContentLoaded", () => {
   activateTopicSubmission();
 });
 
+// function resetForm() {
+  // submitTopic.addEventListener("click", () => {
+  //   let input1 = document.getElementById('intopic');
+  //   console.log("in reset");
+  //   input1.value = "";
+  // });
+// }
+
+
 const generateTopicList = async (topic, custom_instruction) => {
 	// Construct the prompt using pageContent and topic.
 	const user_prompt = `topic: ${topic}`;
@@ -75,22 +84,32 @@ const activateTopicSubmission = () => {
   const topicInput = document.getElementById("intopic");
   const topicButton = document.getElementById("submitTopic");
 
+
   topicButton.addEventListener("click", async() => {
     const topic = topicInput.value;
     console.log(topic);
     await storeTopic(topic);
+
+
     const instruction = "Your task is to generate a structured list of 20+ relevant topics based on a given user topic. The goal is to create a broader context to help determine whether a webpage is relevant to the user's interest. | Output Format: topic: string (Original user topic), description: string (Brief summary of the topic), list_of_topics: array (20+ relevant subtopics, each containing a short keyword-based description with exactly 5 keywords). | Guidelines: - Expand the given topic by identifying closely related subtopics, concepts, or terminologies. - Include synonyms, industry-specific jargon, and alternative ways the topic may be discussed. - If applicable, provide different perspectives (e.g., academic, technical, casual, industry use cases). - Prioritize topics that are likely to appear on webpages that genuinely cover the subject. - Do not generate overly broad or generic topics—keep them directly relevant. - Ensure that each subtopic in list_of_topics has an accompanying 5-keyword description that concisely represents its core concept. - Do not generate explanations, summaries, or commentary beyond the specified format.";
     const response = await generateTopicList(topic, instruction);
+
+     let input1 = document.getElementById("intopic");
+    console.log("in reset");
+    input1.value = "";
+
     const llmContent = response['choices'][0]['message']['content'];
     await storeTopicList(llmContent);
+
+    console.log("in reset");
+    input1.value = "";
   });
+  
 }
 
 const activateTimer = () => {
   const timeInput = document.getElementById("timeInput");
   const startButton = document.getElementById("startTimer");
-  const pauseButton = document.getElementById("pauseTimer");
-  const resumeButton = document.getElementById("resumeTimer");
   const pauseButton = document.getElementById("pauseTimer");
   const resumeButton = document.getElementById("resumeTimer");
   const timerDisplay = document.getElementById("timerDisplay");
@@ -122,12 +141,6 @@ const activateTimer = () => {
 
   startButton.addEventListener("click", () => {
       const time = parseInt(timeInput.value);
-      if (isNaN(time) || time <= 0) return;
-
-      const timerEnd = Date.now() + time * 60000;
-      chrome.storage.local.set({ timerEnd, timerPaused: null });
-
-      timerRunning = true;
       if (isNaN(time) || time <= 0) return;
 
       const timerEnd = Date.now() + time * 60000;
@@ -174,11 +187,6 @@ const activateTimer = () => {
           pauseButton.disabled = false;
           resumeButton.disabled = true;
       }
-  });
-
-      startButton.disabled = true;
-      pauseButton.disabled = false;
-      resumeButton.disabled = true;
   });
 
   pauseButton.addEventListener("click", () => {
@@ -243,12 +251,12 @@ const activateTimer = () => {
           // Keep updating every second while popup is open
           setTimeout(updateTimerDisplay, 1000);
       });
-  }
+  })
 
 
   updateTimerDisplay();
 }
-
+}
 const activateToggleButton = () => {
   // Get the toggle button
   const toggleButton = document.getElementById('toggle-btn');
@@ -277,3 +285,4 @@ const activateToggleButton = () => {
     toggleButton.textContent = isEnabled ? 'Disable Focus Mode' : 'Enable Focus Mode';
   }
 }
+
