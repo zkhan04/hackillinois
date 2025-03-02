@@ -1,17 +1,19 @@
-baseUrl = 'http://127.0.0.1:1234/';
-apis = ['/api/v0/models', '/api/v0/chat/completions']
-// import { getPageText } from "./scraper";
+BASE_URL = 'http://127.0.0.1:1234/';
 LLM_MODEL = 'llama-3.2-3b-instruct';
-// gets all of the "mai"
+
 const getPageText = () => {
     const content = document.querySelector("#content");
-    // console.log(content.innerText);
+    console.log(`Content size: ${content.innerText.length}`);
+    if (content.innerText.length > 20000) {
+        console.log("Content too long, truncating to 20000 characters");
+        return content.innerText.slice(0, 20000);
+    }
     return content.innerText;
 }
 
 const getLLMModels = async () => {
 	try {
-		const response = await fetch(`${baseUrl}api/v0/models`);
+		const response = await fetch(`${BASE_URL}api/v0/models`);
 		if (!response.ok) throw new Error('Failed to fetch models');
 		return await response.json();
 	} catch (err) {
@@ -24,7 +26,7 @@ const generateTopicList = async (topic, custom_instruction) => {
 	// Construct the prompt using pageContent and topic.
 	const user_prompt = `topic: ${topic}`;
 	try {
-		const response = await fetch(`${baseUrl}api/v0/chat/completions`, {
+		const response = await fetch(`${BASE_URL}api/v0/chat/completions`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
@@ -105,7 +107,7 @@ const getLLMOpinion = async (page_content, custom_instruction) => {
     })
     // console.log(body);
 	try {
-		const response = await fetch(`${baseUrl}api/v0/chat/completions`, {
+		const response = await fetch(`${BASE_URL}api/v0/chat/completions`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: body
