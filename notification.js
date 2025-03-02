@@ -1,9 +1,8 @@
-
 const _opt = {
     type: "basic",
     title: "Lock in time!",
     message: `Looks like you're off task. It's time to lock in!`,
-    // iconUrl: "url_to_small_icon"
+    iconUrl: "icon.png"
   }
 
 const _id = "lock-in-notification";
@@ -12,7 +11,7 @@ function requestPermission() {
   Notification.requestPermission()
     .then((permission) => {
       console.log('Promise resolved: ' + permission);
-      showPermission();
+      // Removed call to showPermission() since it's not defined.
     })
     .catch((error) => {
       console.log('Promise was rejected');
@@ -20,13 +19,18 @@ function requestPermission() {
     });
 }
 
-async function showNotification(id, options) {
+async function showNotification() {
+    console.log('Notification permission: ' + Notification.permission);
     if (Notification.permission === "granted") {
-        await chrome.notifications.create(id, options);
+        chrome.runtime.sendMessage({ action: "showNotification" }, (response) => {
+            console.log(response.status);
+        });
     } else if (Notification.permission === "default") {
         requestPermission();
         if (Notification.permission === "granted") {
-            await chrome.notifications.create(id, options);
+            chrome.runtime.sendMessage({ action: "showNotification" }, (response) => {
+                console.log(response.status);
+            });
         }
     }
 }

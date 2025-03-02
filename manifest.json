@@ -12,9 +12,11 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "type": "module"
+      "js": ["notification.js", "content.js"],
+      "type": "module",
+      "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "alarms", "notifications"]
+  "permissions": ["storage", "alarms", "notifications"],
+  "host_permissions": ["http://127.0.0.1:1234/*"]
 }
