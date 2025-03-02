@@ -187,6 +187,7 @@ const activateTopicSubmission = () => {
   const topicButton = document.getElementById("submitTopic");
   const loaderContainer = document.getElementById("loaderContainer");
 
+
   topicButton.addEventListener("click", async() => {
     const topic = topicInput.value;
     if (!topic.trim()) return;
@@ -231,7 +232,9 @@ const activateTopicSubmission = () => {
     if (event.key === "Enter") {
       topicButton.click();
     }
+
   });
+  
 }
 
 const activateTimer = () => {
@@ -245,10 +248,6 @@ const activateTimer = () => {
 
   // Notify background script that popup is open
   chrome.runtime.sendMessage("popup_opened");
-
-  function hideStart() {
-    document.getElementById("timerStart").style.display = "none";
-}
   
   // Restore button states when popup opens
   chrome.storage.local.get(["timerEnd", "timerRunning"], (data) => {
@@ -377,12 +376,13 @@ const activateTimer = () => {
           // Keep updating every second while popup is open
           setTimeout(updateTimerDisplay, 1000);
       });
+
   });
   }
 
   updateTimerDisplay();
 }
-
+}
 const activateToggleButton = () => {
   // Get the toggle button and level selector
   const toggleButton = document.getElementById('toggle-btn');
