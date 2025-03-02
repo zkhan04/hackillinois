@@ -181,6 +181,12 @@ const getStoredTopicList = async () => {
     }
 };
 
+async function showNotification() {
+    chrome.runtime.sendMessage({ action: "showNotification" });
+    
+}
+  
+
 (async function () {
     const lockinMode = await chrome.storage.sync.get("focusModeEnabled");
 
