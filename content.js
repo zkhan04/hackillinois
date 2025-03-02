@@ -5,7 +5,11 @@ LLM_MODEL = 'llama-3.2-3b-instruct';
 // gets all of the "mai"
 const getPageText = () => {
     const content = document.querySelector("#content");
-    // console.log(content.innerText);
+    console.log(`Content size: ${content.innerText.length}`);
+    if (content.innerText.length > 20000) {
+        console.log("Content too long, truncating to 20000 characters");
+        return content.innerText.slice(0, 20000);
+    }
     return content.innerText;
 }
 
