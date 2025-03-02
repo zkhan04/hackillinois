@@ -14,6 +14,29 @@ function startBackgroundTimer() {
     }, 1000);
 }
 
+function calculateFinalStats(stats) {
+  if (!stats || stats.count === 0) {
+    return {
+      averageScore: 0,
+      count: 0,
+      message: "Were you browsing the Dark Web? You're like a ghost - we didn't track any sites! 👻",
+      isEasterEgg: true
+    };
+  }
+  
+  const average = stats.totalScore / stats.count;
+  const message = average >= 0.7 
+    ? "Congrats! You stayed focused! 🎉" 
+    : "Keep trying! You can do better next time!";
+    
+  return {
+    averageScore: average,
+    count: stats.count,
+    message: message,
+    isEasterEgg: false
+  };
+}
+
 function checkTimer() {
     chrome.storage.local.get("timerEnd", (data) => {
         if (!data.timerEnd) return;
@@ -30,17 +53,18 @@ function checkTimer() {
             // Compute final stats
             chrome.storage.local.get("sessionStats", (data) => {
               const stats = data.sessionStats || { totalScore: 0, count: 0 };
-              const average = stats.count > 0 ? stats.totalScore / stats.count : 0;
-              const message = average >= 0.7 
-                ? "Congrats! You stayed focused! 🎉" 
-                : "Keep trying! You can do better next time!";
-              chrome.storage.local.set({ finalStats: { averageScore: average, count: stats.count, message } });
-              // Optionally clear sessionStats
+              const finalStats = calculateFinalStats(stats);
+              
+              chrome.storage.local.set({ finalStats: finalStats });
               chrome.storage.local.remove("sessionStats");
+              
+              // Notify popup and other parts that the session ended
+              chrome.runtime.sendMessage({ 
+                action: "sessionEnded",
+                stats: finalStats
+              });
+              chrome.runtime.sendMessage("timer_finished"); // Notify popup if open
             });
-            // Notify popup and other parts that the session ended
-            chrome.runtime.sendMessage({ action: "sessionEnded" });
-            chrome.runtime.sendMessage("timer_finished"); // Notify popup if open
         }
     });
 }
@@ -117,21 +141,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     setTimeout(() => {
       chrome.storage.local.get("sessionStats", (data) => {
         const stats = data.sessionStats || { totalScore: 0, count: 0 };
-        const average = stats.count > 0 ? stats.totalScore / stats.count : 0;
-        const finalMsg = average >= 0.7 
-          ? "Congrats! You stayed focused! 🎉" 
-          : "Keep trying! You can do better next time!";
-        
-        const finalStats = { 
-          averageScore: average, 
-          count: stats.count, 
-          message: finalMsg 
-        };
+        const finalStats = calculateFinalStats(stats);
         
         chrome.storage.local.set({ finalStats: finalStats });
         console.log("Sending sessionEnded message with finalStats:", finalStats);
         
-        // Send message with the stats directly included
         chrome.runtime.sendMessage({ 
           action: "sessionEnded",
           stats: finalStats

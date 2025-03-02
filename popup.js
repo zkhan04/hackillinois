@@ -59,16 +59,29 @@ document.addEventListener("DOMContentLoaded", () => {
 function updateStatsUI(finalStats) {
   const statsContainer = document.getElementById("statsContainer");
   if (statsContainer) {
-    statsContainer.innerHTML = `
-      <h3>Session Summary</h3>
-      <p>Evaluated websites: ${finalStats.count}</p>
-      <p>Average Focus Score: ${(finalStats.averageScore * 100).toFixed(1)}%</p>
-      <p>${finalStats.message}</p>
-    `;
-    // Trigger simple confetti simulation if score is high
-    if (finalStats.averageScore >= 0.7) {
-      statsContainer.style.animation = "confetti 2s ease-out";
-      setTimeout(() => statsContainer.style.animation = "", 2000);
+    if (finalStats.isEasterEgg) {
+      // Easter egg display for when no sites were visited
+      statsContainer.innerHTML = `
+        <h3>Session Summary</h3>
+        <div class="easter-egg">
+          <p style="font-size: 24px;">👻</p>
+          <p>${finalStats.message}</p>
+        </div>
+      `;
+      statsContainer.style.animation = "ghost-float 3s infinite ease-in-out";
+    } else {
+      // Normal stats display
+      statsContainer.innerHTML = `
+        <h3>Session Summary</h3>
+        <p>Evaluated websites: ${finalStats.count}</p>
+        <p>Average Focus Score: ${(finalStats.averageScore * 100).toFixed(1)}%</p>
+        <p>${finalStats.message}</p>
+      `;
+      // Trigger simple confetti simulation if score is high
+      if (finalStats.averageScore >= 0.7) {
+        statsContainer.style.animation = "confetti 2s ease-out";
+        setTimeout(() => statsContainer.style.animation = "", 2000);
+      }
     }
   }
 }
