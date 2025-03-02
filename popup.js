@@ -7,15 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   activateTopicSubmission();
 });
 
-// function resetForm() {
-  // submitTopic.addEventListener("click", () => {
-  //   let input1 = document.getElementById('intopic');
-  //   console.log("in reset");
-  //   input1.value = "";
-  // });
-// }
-
-
 const generateTopicList = async (topic, custom_instruction) => {
 	// Construct the prompt using pageContent and topic.
 	const user_prompt = `topic: ${topic}`;
@@ -230,25 +221,13 @@ const activateTimer = () => {
 
           // Keep updating every second while popup is open
           setTimeout(updateTimerDisplay, 1000);
-      chrome.storage.local.get(["timerEnd"], (data) => {
-          if (!data.timerEnd) return;
-
-          const timeLeftMilliseconds = Math.max(0, data.timerEnd - Date.now());
-          const timeLeftSeconds = Math.floor(timeLeftMilliseconds / 1000);
-          const minutesLeft = Math.floor(timeLeftSeconds / 60);
-          const secondsLeft = timeLeftSeconds % 60;
-
-          timerDisplay.textContent = `Time Left: ${minutesLeft}m ${secondsLeft}s`;
-
-          // Keep updating every second while popup is open
-          setTimeout(updateTimerDisplay, 1000);
       });
-  })
+  }
 
 
   updateTimerDisplay();
 }
-}
+
 const activateToggleButton = () => {
   // Get the toggle button
   const toggleButton = document.getElementById('toggle-btn');
